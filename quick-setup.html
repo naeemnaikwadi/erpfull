@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick ERP Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .credentials {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Quick ERP Setup</h1>
+        <p class="subtitle">Create all ERP users in one click</p>
+        
+        <button class="button" onclick="createUsers()" id="createBtn">
+            Create All ERP Users
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Creating users... Please wait...</p>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="credentials" id="credentials" style="display: none;">
+            <h3>🔑 Login Credentials:</h3>
+            <p><strong>Admin:</strong> admin@college.edu / admin123</p>
+            <p><strong>Admission Officer:</strong> admission@college.edu / admission123</p>
+            <p><strong>Fee Manager:</strong> fees@college.edu / fees123</p>
+            <p><strong>Hostel Manager:</strong> hostel@college.edu / hostel123</p>
+            <p><strong>Exam Controller:</strong> exam@college.edu / exam123</p>
+            <p><strong>Accountant:</strong> accountant@college.edu / account123</p>
+            <p><strong>Registrar:</strong> registrar@college.edu / registrar123</p>
+            <p><strong>Instructor:</strong> instructor@college.edu / instructor123</p>
+            <p><strong>Student:</strong> student@college.edu / student123</p>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+                <h4>🎯 Next Steps:</h4>
+                <p>1. Go to your login page</p>
+                <p>2. Login with any of the credentials above</p>
+                <p>3. Each role will see different navigation menus</p>
+                <p>4. Test the ERP functionality!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function createUsers() {
+            const btn = document.getElementById('createBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const credentials = document.getElementById('credentials');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            credentials.style.display = 'none';
+            
+            try {
+                console.log('Creating users...');
+                const response = await fetch('http://localhost:4000/api/quick-setup', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p>${data.message}</p>
+                        <p>Created ${data.count} users successfully.</p>
+                        <div class="status success">🎉 All ERP users are now ready to use!</div>
+                    `;
+                    credentials.style.display = 'block';
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>${data.message || 'Failed to create users'}</p>
+                        <div class="status error">Please check your server connection</div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                result.className = 'result error';
+                result.innerHTML = `
+                    <h3>❌ Connection Error</h3>
+                    <p>Failed to connect to server: ${error.message}</p>
+                    <div class="status error">
+                        Make sure your server is running on port 4000<br>
+                        Run: npm run dev
+                    </div>
+                `;
+            } finally {
+                loading.style.display = 'none';
+                btn.disabled = false;
+                result.style.display = 'block';
+            }
+        }
+        
+        // Auto-check server status on page load
+        window.onload = async function() {
+            try {
+                const response = await fetch('http://localhost:4000/test');
+                if (response.ok) {
+                    console.log('✅ Server is running');
+                } else {
+                    console.log('❌ Server not responding properly');
+                }
+            } catch (error) {
+                console.log('❌ Server not accessible:', error.message);
+            }
+        };
+    </script>
+</body>
+</html>
