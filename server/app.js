@@ -62,6 +62,30 @@ const testCloudinary = async () => {
 // Test Cloudinary after a short delay to ensure MongoDB is connected first
 setTimeout(testCloudinary, 1000);
 
+// Test Gemini Connectivity
+const testGemini = async () => {
+  try {
+    const axios = require('axios');
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      console.log('❌ Gemini not configured (GEMINI_API_KEY missing)');
+      return;
+    }
+    const url = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent';
+    const payload = { contents: [{ role: 'user', parts: [{ text: 'ping' }] }] };
+    const res = await axios.post(`${url}?key=${key}`, payload, { timeout: 30000 });
+    if (res.status === 200) {
+      console.log('✅ Gemini connected');
+    } else {
+      console.log('❌ Gemini connection failed:', res.status);
+    }
+  } catch (e) {
+    console.log('❌ Gemini connection failed:', e?.response?.data || e.message);
+  }
+};
+
+setTimeout(testGemini, 1500);
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
@@ -84,6 +108,10 @@ app.use('/api/assignments', require('./routes/assignments')); // Assignment rout
 app.use('/api/downloads', require('./routes/downloads')); // Downloads routes
 app.use('/api/livekit', require('./routes/livekit')); // LiveKit routes
 app.use('/api/admin', require('./routes/admin')); // Admin routes
+app.use('/api/admin/communication', require('./routes/adminCommunication')); // Admin communication with students
+app.use('/api/chat', require('./routes/chat')); // Chatbot routes
+app.use('/api/library', require('./routes/library')); // Library routes
+app.use('/api/attendance', require('./routes/attendance')); // Attendance routes
 
 // ERP Routes
 app.use('/api/erp/admissions', require('./routes/admissions')); // Admissions routes
@@ -100,9 +128,18 @@ app.use('/api/student', require('./routes/studentPortal')); // Student self-serv
 
 // Accountant Routes
 app.use('/api/accountant', require('./routes/accountant')); // Accountant financial management
+app.use('/api/erp', require('./routes/accountant')); // ERP compatibility for accountant routes
 
 // Registrar Routes
 app.use('/api/registrar', require('./routes/registrar')); // Registrar transcript and certificate management
+app.use('/api/profile', require('./routes/profile')); // Unified profile management
+app.use('/api/forgot-password', require('./routes/forgotPassword')); // Forgot password functionality
+
+// Library Routes
+app.use('/api/library', require('./routes/library')); // Library management system
+
+// Attendance Routes
+app.use('/api/attendance', require('./routes/attendance')); // Attendance management system
 
 // Test route
 app.get('/test', (req, res) => {

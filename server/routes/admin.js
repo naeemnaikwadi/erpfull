@@ -22,6 +22,231 @@ const bcrypt = require('bcryptjs');
 router.use(auth);
 router.use(adminOnly);
 
+// ==================== CLASSROOM & COURSE ASSIGNMENT ====================
+
+// Assign instructor to classroom
+router.post('/assign-instructor-to-classroom', async (req, res) => {
+  try {
+    const { classroomId, instructorId } = req.body;
+
+    // Verify classroom exists
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    // Verify instructor exists
+    const instructor = await User.findById(instructorId);
+    if (!instructor || instructor.role !== 'instructor') {
+      return res.status(400).json({ message: 'Invalid instructor' });
+    }
+
+    // Check if instructor is already assigned to this classroom
+    const existingAssignment = classroom.instructors.find(
+      inst => inst.instructorId.toString() === instructorId
+    );
+
+    if (existingAssignment) {
+      return res.status(400).json({ message: 'Instructor already assigned to this classroom' });
+    }
+
+    // Add instructor to classroom
+    classroom.instructors.push({
+      instructorId: instructorId,
+      instructorName: instructor.name,
+      role: 'Primary',
+      assignedAt: new Date(),
+      isActive: true
+    });
+
+    // Update primary instructor if this is the first assignment
+    if (!classroom.instructor) {
+      classroom.instructor = instructorId;
+      classroom.instructorName = instructor.name;
+    }
+
+    await classroom.save();
+
+    res.json({ 
+      message: 'Instructor assigned successfully',
+      classroom: await Classroom.findById(classroomId).populate('instructors.instructorId', 'name email')
+    });
+  } catch (error) {
+    console.error('Error assigning instructor:', error);
+    res.status(500).json({ message: 'Error assigning instructor', error: error.message });
+  }
+});
+
+// Remove instructor from classroom
+router.delete('/classrooms/:classroomId/remove-instructor', async (req, res) => {
+  try {
+    const { classroomId } = req.params;
+    const { instructorId } = req.body;
+
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    // Remove instructor from instructors array
+    classroom.instructors = classroom.instructors.filter(
+      inst => inst.instructorId.toString() !== instructorId
+    );
+
+    // If this was the primary instructor, set a new one or clear it
+    if (classroom.instructor.toString() === instructorId) {
+      if (classroom.instructors.length > 0) {
+        classroom.instructor = classroom.instructors[0].instructorId;
+        classroom.instructorName = classroom.instructors[0].instructorName;
+      } else {
+        classroom.instructor = null;
+        classroom.instructorName = null;
+      }
+    }
+
+    await classroom.save();
+
+    res.json({ message: 'Instructor removed successfully' });
+  } catch (error) {
+    console.error('Error removing instructor:', error);
+    res.status(500).json({ message: 'Error removing instructor', error: error.message });
+  }
+});
+
+// Add student to classroom
+router.post('/classrooms/:classroomId/add-student', async (req, res) => {
+  try {
+    const { classroomId } = req.params;
+    const { studentId } = req.body;
+
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    const student = await User.findById(studentId);
+    if (!student || student.role !== 'student') {
+      return res.status(400).json({ message: 'Invalid student' });
+    }
+
+    // Check if student is already in classroom
+    if (classroom.students.includes(studentId)) {
+      return res.status(400).json({ message: 'Student already in this classroom' });
+    }
+
+    classroom.students.push(studentId);
+    await classroom.save();
+
+    res.json({ 
+      message: 'Student added successfully',
+      classroom: await Classroom.findById(classroomId).populate('students', 'name email prn')
+    });
+  } catch (error) {
+    console.error('Error adding student:', error);
+    res.status(500).json({ message: 'Error adding student', error: error.message });
+  }
+});
+
+// Remove student from classroom
+router.delete('/classrooms/:classroomId/remove-student/:studentId', async (req, res) => {
+  try {
+    const { classroomId, studentId } = req.params;
+
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    classroom.students = classroom.students.filter(
+      id => id.toString() !== studentId
+    );
+
+    await classroom.save();
+
+    res.json({ message: 'Student removed successfully' });
+  } catch (error) {
+    console.error('Error removing student:', error);
+    res.status(500).json({ message: 'Error removing student', error: error.message });
+  }
+});
+
+// Create course and assign to classroom
+router.post('/courses', async (req, res) => {
+  try {
+    const { title, description, classroomId, instructorId, date } = req.body;
+
+    // Verify classroom exists
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    // Verify instructor exists and is assigned to classroom
+    const instructor = await User.findById(instructorId);
+    if (!instructor || instructor.role !== 'instructor') {
+      return res.status(400).json({ message: 'Invalid instructor' });
+    }
+
+    // Check if instructor is assigned to this classroom
+    const isInstructorAssigned = classroom.instructors.some(
+      inst => inst.instructorId.toString() === instructorId && inst.isActive
+    );
+
+    if (!isInstructorAssigned) {
+      return res.status(400).json({ message: 'Instructor not assigned to this classroom' });
+    }
+
+    // Create course
+    const course = new Course({
+      name: title,
+      description,
+      date: new Date(date),
+      classroom: classroomId,
+      instructor: instructorId
+    });
+
+    await course.save();
+
+    // Populate the course with related data
+    const populatedCourse = await Course.findById(course._id)
+      .populate('classroom', 'name')
+      .populate('instructor', 'name email');
+
+    res.status(201).json(populatedCourse);
+  } catch (error) {
+    console.error('Error creating course:', error);
+    res.status(500).json({ message: 'Error creating course', error: error.message });
+  }
+});
+
+// Get instructor's assigned classrooms and courses
+router.get('/instructor/:instructorId/assignments', async (req, res) => {
+  try {
+    const { instructorId } = req.params;
+
+    // Get classrooms where instructor is assigned
+    const classrooms = await Classroom.find({
+      'instructors.instructorId': instructorId,
+      'instructors.isActive': true
+    }).populate('students', 'name email prn course branch semester');
+
+    // Get courses created by this instructor
+    const courses = await Course.find({ instructor: instructorId })
+      .populate('classroom', 'name')
+      .populate('studentsEnrolled', 'name email prn');
+
+    res.json({
+      classrooms,
+      courses,
+      totalClassrooms: classrooms.length,
+      totalCourses: courses.length
+    });
+  } catch (error) {
+    console.error('Error fetching instructor assignments:', error);
+    res.status(500).json({ message: 'Error fetching assignments', error: error.message });
+  }
+});
+
 // Get comprehensive ERP dashboard stats
 router.get('/dashboard-stats', async (req, res) => {
   try {
@@ -193,6 +418,18 @@ router.get('/users', async (req, res) => {
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } }
       ];
+    }
+
+    // Restrict higher roles visibility for admin by default
+    const higherRoles = ['admin', 'admission_officer', 'fee_manager', 'hostel_manager', 'exam_controller', 'accountant', 'registrar'];
+    if (req.user.role === 'admin') {
+      if (!role) {
+        // When no explicit role filter, exclude higher roles
+        query.role = { $nin: higherRoles };
+      } else if (higherRoles.includes(role)) {
+        // If admin tries to request a higher role explicitly, deny
+        return res.status(403).json({ error: 'Not authorized to view requested role' });
+      }
     }
 
     const sortOptions = {};
@@ -1460,5 +1697,138 @@ function getRolePermissions(role) {
   
   return permissions[role] || [];
 }
+
+// ==================== INSTRUCTOR ASSIGNMENT ====================
+
+// Assign instructor to classroom
+router.post('/assign-instructor-to-classroom', async (req, res) => {
+  try {
+    const { classroomId, instructorId, role = 'Secondary' } = req.body;
+
+    // Validate inputs
+    if (!classroomId || !instructorId) {
+      return res.status(400).json({ message: 'Classroom ID and Instructor ID are required' });
+    }
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    // Check if instructor exists and has instructor role
+    const instructor = await User.findById(instructorId);
+    if (!instructor || instructor.role !== 'instructor') {
+      return res.status(404).json({ message: 'Instructor not found or invalid role' });
+    }
+
+    // Check if instructor is already assigned to this classroom
+    const existingAssignment = classroom.instructors.find(
+      inst => inst.instructorId.toString() === instructorId
+    );
+
+    if (existingAssignment) {
+      return res.status(400).json({ message: 'Instructor is already assigned to this classroom' });
+    }
+
+    // Add instructor to classroom
+    classroom.instructors.push({
+      instructorId,
+      instructorName: instructor.name,
+      role,
+      assignedAt: new Date(),
+      isActive: true
+    });
+
+    await classroom.save();
+
+    res.json({
+      message: 'Instructor assigned to classroom successfully',
+      classroom: {
+        id: classroom._id,
+        name: classroom.name,
+        instructor: {
+          id: instructor._id,
+          name: instructor.name,
+          role
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error assigning instructor to classroom:', error);
+    res.status(500).json({ message: 'Error assigning instructor to classroom', error: error.message });
+  }
+});
+
+// Remove instructor from classroom
+router.delete('/remove-instructor-from-classroom', async (req, res) => {
+  try {
+    const { classroomId, instructorId } = req.body;
+
+    if (!classroomId || !instructorId) {
+      return res.status(400).json({ message: 'Classroom ID and Instructor ID are required' });
+    }
+
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    // Remove instructor from classroom
+    classroom.instructors = classroom.instructors.filter(
+      inst => inst.instructorId.toString() !== instructorId
+    );
+
+    await classroom.save();
+
+    res.json({ message: 'Instructor removed from classroom successfully' });
+  } catch (error) {
+    console.error('Error removing instructor from classroom:', error);
+    res.status(500).json({ message: 'Error removing instructor from classroom', error: error.message });
+  }
+});
+
+// Get classrooms with assigned instructors
+router.get('/classrooms-with-instructors', async (req, res) => {
+  try {
+    const classrooms = await Classroom.find()
+      .populate('instructors.instructorId', 'name email')
+      .select('name description course instructors')
+      .sort({ name: 1 });
+
+    res.json(classrooms);
+  } catch (error) {
+    console.error('Error fetching classrooms with instructors:', error);
+    res.status(500).json({ message: 'Error fetching classrooms with instructors', error: error.message });
+  }
+});
+
+// Get instructors not assigned to a specific classroom
+router.get('/available-instructors/:classroomId', async (req, res) => {
+  try {
+    const { classroomId } = req.params;
+
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    // Get all instructors
+    const allInstructors = await User.find({ role: 'instructor' }).select('name email');
+
+    // Get assigned instructor IDs
+    const assignedInstructorIds = classroom.instructors.map(inst => inst.instructorId.toString());
+
+    // Filter out already assigned instructors
+    const availableInstructors = allInstructors.filter(
+      instructor => !assignedInstructorIds.includes(instructor._id.toString())
+    );
+
+    res.json(availableInstructors);
+  } catch (error) {
+    console.error('Error fetching available instructors:', error);
+    res.status(500).json({ message: 'Error fetching available instructors', error: error.message });
+  }
+});
 
 module.exports = router;

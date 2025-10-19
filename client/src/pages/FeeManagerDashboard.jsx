@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/authContext';
 import DashboardLayout from '../components/DashboardLayout';
 import {
+  Activity,
   DollarSign,
   Search,
   Filter,
@@ -22,6 +23,7 @@ import {
   PieChart,
   FileText
 } from 'lucide-react';
+import { downloadCSV } from '../utils/download';
 
 const FeeManagerDashboard = () => {
   const { user } = useAuth();
@@ -77,7 +79,10 @@ const FeeManagerDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/erp/fees/stats/overview');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/erp/fees/stats/overview', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await response.json();
       
       setStats({
@@ -411,10 +416,19 @@ const FeeManagerDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Fee Management Dashboard</h1>
               <p className="text-gray-600 dark:text-gray-400">Manage student fees and payments efficiently</p>
             </div>
-            <button className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2">
-              <Plus className="w-4 h-4" />
-              <span>Add Fee</span>
-            </button>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => { fetchFees(); fetchStats(); }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+              >
+                <Activity className="w-4 h-4" />
+                <span>Refresh Data</span>
+              </button>
+              <button className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2">
+                <Plus className="w-4 h-4" />
+                <span>Add Fee</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -458,19 +472,40 @@ const FeeManagerDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const today = new Date();
+              const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+              const end = new Date().toISOString();
+              const qs = new URLSearchParams({ startDate: start, endDate: end }).toString();
+              const res = await fetch(`/api/erp/fees/dashboard/stats?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+              const data = await res.json();
+              console.log('Fee Analytics (current month):', data);
+              alert('Fee analytics refreshed for current month.');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <BarChart3 className="w-8 h-8 text-blue-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Generate Report</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const res = await fetch('/api/erp/fees/stats/overview', { headers: { Authorization: `Bearer ${token}` } });
+              const data = await res.json();
+              console.log('Fee Analytics Overview:', data);
+              alert('Analytics loaded (see console)');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <PieChart className="w-8 h-8 text-green-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Analytics</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async () => {
+              const qs = new URLSearchParams({ format: 'csv' }).toString();
+              await downloadCSV(`/api/erp/fees/export?${qs}`, 'fees.csv');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <FileText className="w-8 h-8 text-purple-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Export Data</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={() => {
+              alert('Scheduling UI can be integrated here.');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <Calendar className="w-8 h-8 text-orange-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Schedule</span>
             </button>

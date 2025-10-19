@@ -4,6 +4,10 @@ const FinancialTransaction = require('../models/FinancialTransaction');
 const Fee = require('../models/Fee');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+let PDFDocument;
+try { PDFDocument = require('pdfkit'); } catch (_) {}
+let ExcelJS;
+try { ExcelJS = require('exceljs'); } catch (_) {}
 
 // Apply authentication middleware to all routes
 router.use(auth);
@@ -98,6 +102,51 @@ router.get('/dashboard', async (req, res) => {
       feeSummary: feeSummary[0] || { totalFees: 0, collectedFees: 0, pendingFees: 0 },
       recentTransactions,
       monthlyTrends
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get financial stats overview (scoped under '/api/erp' mount)
+router.get('/financials/stats/overview', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter.transactionDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Get financial summary
+    const financialSummary = await FinancialTransaction.aggregate([
+      { $match: dateFilter },
+      {
+        $group: {
+          _id: '$transactionType',
+          totalAmount: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Calculate totals
+    const totalRevenue = financialSummary.find(s => s._id === 'Income')?.totalAmount || 0;
+    const totalExpenses = financialSummary.find(s => s._id === 'Expense')?.totalAmount || 0;
+    const pendingPayments = await FinancialTransaction.countDocuments({ 
+      ...dateFilter, 
+      status: 'Pending' 
+    });
+
+    res.json({
+      totalRevenue,
+      totalExpenses,
+      netProfit: totalRevenue - totalExpenses,
+      pendingPayments,
+      financialSummary
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -576,6 +625,78 @@ router.get('/budget-analysis', async (req, res) => {
         endDate: endDate || 'Present'
       }
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Consolidated financial export (xlsx/csv/pdf)
+router.get('/reports/consolidated', async (req, res) => {
+  try {
+    const { format = 'xlsx', startDate, endDate } = req.query;
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter.transactionDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    if (format === 'xlsx') {
+      if (!ExcelJS) return res.status(503).json({ message: 'Excel not available' });
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Transactions');
+      ws.columns = [
+        { header: 'Txn ID', key: 'id', width: 20 },
+        { header: 'Type', key: 'type', width: 12 },
+        { header: 'Category', key: 'category', width: 16 },
+        { header: 'Amount', key: 'amount', width: 12 },
+        { header: 'Status', key: 'status', width: 12 },
+        { header: 'Date', key: 'date', width: 22 }
+      ];
+      const list = await FinancialTransaction.find(dateFilter).sort({ transactionDate: -1 });
+      list.forEach(t => ws.addRow({
+        id: t.transactionId,
+        type: t.transactionType,
+        category: t.category,
+        amount: t.amount,
+        status: t.status,
+        date: t.transactionDate
+      }));
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=financial_report.xlsx');
+      await wb.xlsx.write(res);
+      res.end();
+      return;
+    }
+
+    if (format === 'pdf') {
+      if (!PDFDocument) return res.status(503).json({ message: 'PDF not available' });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=financial_report.pdf');
+      const doc = new PDFDocument({ margin: 40 });
+      doc.pipe(res);
+      doc.fontSize(18).text('Financial Report', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12);
+      const summary = await FinancialTransaction.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: '$transactionType', total: { $sum: '$amount' } } }
+      ]);
+      summary.forEach(s => doc.text(`${s._id}: ${s.total}`));
+      doc.moveDown();
+      const list = await FinancialTransaction.find(dateFilter).sort({ transactionDate: -1 }).limit(100);
+      list.forEach(t => doc.text(`${t.transactionId} | ${t.transactionType} | ${t.category} | ${t.amount} | ${t.status} | ${new Date(t.transactionDate).toLocaleString()}`));
+      doc.end();
+      return;
+    }
+
+    // CSV fallback
+    const list = await FinancialTransaction.find(dateFilter).sort({ transactionDate: -1 });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=financial_report.csv');
+    const header = 'Txn ID,Type,Category,Amount,Status,Date';
+    const csv = header + '\n' + list.map(t => [
+      t.transactionId, t.transactionType, t.category, t.amount, t.status, t.transactionDate?.toISOString()
+    ].join(',')).join('\n');
+    res.send(csv);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

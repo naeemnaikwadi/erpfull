@@ -19,6 +19,7 @@ import {
   Calendar,
   MapPin
 } from 'lucide-react';
+import { downloadCSV } from '../utils/download';
 
 const AdmissionsPage = () => {
   const [admissions, setAdmissions] = useState([]);
@@ -380,7 +381,7 @@ const AdmissionsPage = () => {
             <Plus className="w-4 h-4" />
             <span>New Admission</span>
           </button>
-          <button onClick={() => window.open('/api/erp/admissions/export?format=csv', '_blank')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
+          <button onClick={() => downloadCSV('/api/erp/admissions/export?format=csv', 'admissions.csv')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
@@ -444,7 +445,7 @@ const AdmissionsPage = () => {
             <option value="2026">2026</option>
           </select>
           <div className="flex items-center gap-2">
-            <button onClick={() => window.open('/api/erp/admissions/export?format=csv', '_blank')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2">
+            <button onClick={() => downloadCSV('/api/erp/admissions/export?format=csv', 'admissions.csv')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2">
               <Download className="w-4 h-4" />
               <span>Export</span>
             </button>

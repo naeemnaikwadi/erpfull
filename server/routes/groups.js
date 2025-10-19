@@ -4,6 +4,7 @@ const { auth } = require('../middleware/auth');
 const StudentGroup = require('../models/StudentGroup');
 const User = require('../models/User');
 const Classroom = require('../models/Classroom');
+const Admission = require('../models/Admission');
 
 // All routes require auth; admission_officer or admin can create/manage
 router.use(auth);
@@ -133,5 +134,95 @@ router.post('/:groupId/assign-classroom', async (req, res) => {
 });
 
 module.exports = router;
+
+// Admin convenience: list students assigned to this admin via groups
+router.get('/my-assigned-students', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    const groups = await StudentGroup.find({ assignedAdmin: req.user.id })
+      .populate('students', 'name email prn course branch semester')
+      .select('name students');
+    
+    // Enhance with admission data for phone numbers
+    const enhancedGroups = await Promise.all(groups.map(async (group) => {
+      const enhancedStudents = await Promise.all(group.students.map(async (student) => {
+        // Get admission data for phone number
+        const admission = await Admission.findOne({ 
+          $or: [
+            { email: student.email },
+            { studentId: student.prn }
+          ]
+        });
+        
+        return {
+          ...student.toObject(),
+          phone: admission?.phone || ''
+        };
+      }));
+      
+      return {
+        ...group.toObject(),
+        students: enhancedStudents
+      };
+    }));
+    
+    res.json({ groups: enhancedGroups });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Lookup endpoints for admission officer (and admin)
+// List admins (id, name, email)
+router.get('/lookups/admins', async (req, res) => {
+  try {
+    if (!['admission_officer', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const admins = await User.find({ role: 'admin', isActive: true })
+      .select('name email')
+      .limit(200)
+      .sort({ name: 1 });
+    res.json({ users: admins });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// List classrooms (basic info) for assignment
+router.get('/lookups/classrooms', async (req, res) => {
+  try {
+    if (!['admission_officer', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const { limit = 100 } = req.query;
+    const classrooms = await Classroom.find({}).select('name').limit(limit * 1).sort({ name: 1 });
+    res.json({ classrooms });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Search students by name/email for building groups
+router.get('/lookups/students', async (req, res) => {
+  try {
+    if (!['admission_officer', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const { q = '', limit = 20 } = req.query;
+    if (!q || String(q).trim().length < 2) return res.json({ users: [] });
+    const regex = new RegExp(String(q).trim(), 'i');
+    const users = await User.find({ role: 'student', $or: [{ name: regex }, { email: regex }] })
+      .select('name email')
+      .limit(limit * 1)
+      .sort({ name: 1 });
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 

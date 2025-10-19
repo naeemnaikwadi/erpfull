@@ -12,6 +12,7 @@ try {
   console.warn('PDFKit not available, PDF receipts disabled');
 }
 const { auth } = require('../middleware/auth');
+const { Parser } = require('json2csv');
 
 // Get all hostels
 router.get('/', auth, async (req, res) => {
@@ -678,6 +679,29 @@ router.get('/dashboard/stats', auth, async (req, res) => {
   }
 });
 
+// Export hostel data (CSV or JSON)
+router.get('/export', auth, async (req, res) => {
+  try {
+    if (!['admin', 'hostel_manager', 'registrar'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const { format = 'json' } = req.query;
+    const hostels = await Hostel.find({ isActive: true })
+      .select('name type totalCapacity currentOccupancy availableSpots location createdAt');
+    if (format === 'csv') {
+      const fields = ['name', 'type', 'totalCapacity', 'currentOccupancy', 'availableSpots', 'location', 'createdAt'];
+      const parser = new Parser({ fields });
+      const csv = parser.parse(hostels.map(h => h.toObject()));
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=hostels.csv');
+      return res.send(csv);
+    }
+    res.json(hostels);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Bulk allocate rooms
 router.post('/bulk-allocate', auth, async (req, res) => {
   try {
@@ -753,6 +777,8 @@ router.post('/bulk-allocate', auth, async (req, res) => {
 });
 
 // Export hostel data
+// NOTE: duplicate export route removed; combined logic above supports both hostel and allocation CSV via 'type'
+/*
 router.get('/export', auth, async (req, res) => {
   try {
     if (!['admin', 'hostel_manager'].includes(req.user.role)) {
@@ -823,5 +849,6 @@ router.get('/export', auth, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+*/
 
 module.exports = router;

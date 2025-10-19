@@ -184,10 +184,7 @@ export default function StudentDashboard() {
 
     loadInitialData();
 
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(refreshAllData, 30000);
-
-    return () => clearInterval(interval);
+    // No auto-refresh
   }, [fetchLearningPathStats, fetchStudentStats]);
 
   useEffect(() => {

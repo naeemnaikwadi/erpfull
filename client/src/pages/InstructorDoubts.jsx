@@ -21,7 +21,7 @@ import {
   FileText,
   Image
 } from 'lucide-react';
-
+import DashboardLayout from '../components/DashboardLayout';
 export default function InstructorDoubts() {
   const navigate = useNavigate();
   const [doubts, setDoubts] = useState([]);
@@ -239,6 +239,7 @@ export default function InstructorDoubts() {
   };
 
   return (
+    <DashboardLayout role="instructor">
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -717,5 +718,6 @@ export default function InstructorDoubts() {
         </div>
       )}
     </div>
+    </DashboardLayout>
   );
 }

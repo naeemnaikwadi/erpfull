@@ -25,7 +25,7 @@ const Profile = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  // Additional fields
+  // Additional fields for higher roles
   const [extra, setExtra] = useState({
     prn: '',
     dateOfBirth: '',
@@ -34,13 +34,20 @@ const Profile = () => {
     branch: '',
     semester: '',
     academicYear: '',
-    address: { street: '', city: '', state: '', pincode: '', country: '' }
+    address: { street: '', city: '', state: '', pincode: '', country: '' },
+    // Higher role specific fields
+    department: '',
+    designation: '',
+    employeeId: '',
+    joiningDate: '',
+    salary: '',
+    reportingManager: ''
   });
 
   useEffect(() => {
     const load = async () => {
       try {
-        const { data } = await API.get('/student/profile');
+        const { data } = await API.get('/profile');
         setFormData({
           name: data?.name || user?.name || '',
           email: data?.email || user?.email || '',
@@ -56,6 +63,10 @@ const Profile = () => {
           branch: data?.branch || '',
           semester: data?.semester || '',
           academicYear: data?.academicYear || '',
+          department: data?.department || '',
+          designation: data?.designation || '',
+          employeeId: data?.employeeId || '',
+          joiningDate: data?.joiningDate ? new Date(data.joiningDate).toISOString().slice(0,10) : '',
           address: {
             street: data?.address?.street || '',
             city: data?.address?.city || '',
@@ -106,7 +117,7 @@ const Profile = () => {
         updateData.newPassword = formData.newPassword;
       }
 
-      const response = await fetch(`http://localhost:4000/api/users/profile`, {
+      const response = await fetch(`http://localhost:4000/api/profile`, {
         method: 'PUT',
         headers: {
           ...getAuthHeaders(),
@@ -262,7 +273,7 @@ const Profile = () => {
         updateData.newPassword = formData.newPassword;
       }
 
-      const response = await fetch(`http://localhost:4000/api/users/profile`, {
+      const response = await fetch(`http://localhost:4000/api/profile`, {
         method: 'PUT',
         headers: {
           ...getAuthHeaders(),
@@ -492,49 +503,85 @@ const Profile = () => {
 
               {/* Academic / Personal Section */}
               <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Student Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  {user?.role === 'student' ? 'Student Information' : 'Personal Information'}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PRN</label>
-                    <input value={extra.prn} disabled className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mobile No</label>
-                    <input value={extra.mobileNo} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth</label>
-                    <input type="date" value={extra.dateOfBirth} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Course</label>
-                    <input value={extra.course} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Branch</label>
-                    <input value={extra.branch} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Semester</label>
-                    <input type="number" value={extra.semester} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Academic Year</label>
-                    <input value={extra.academicYear} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  </div>
+                  {user?.role === 'student' ? (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PRN</label>
+                        <input value={extra.prn} disabled className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mobile No</label>
+                        <input value={extra.mobileNo} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth</label>
+                        <input type="date" value={extra.dateOfBirth} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Course</label>
+                        <input value={extra.course} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Branch</label>
+                        <input value={extra.branch} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Semester</label>
+                        <input type="number" value={extra.semester} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Academic Year</label>
+                        <input value={extra.academicYear} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                        <input value={extra.department || user?.department || ''} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Designation</label>
+                        <input value={extra.designation || user?.designation || ''} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee ID</label>
+                        <input value={extra.employeeId || user?.employeeId || ''} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Joining Date</label>
+                        <input type="date" value={extra.joiningDate || user?.joiningDate || ''} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mobile No</label>
+                        <input value={extra.mobileNo || user?.mobileNo || ''} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth</label>
+                        <input type="date" value={extra.dateOfBirth || user?.dateOfBirth || ''} disabled={true} className="w-full px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <h4 className="text-md font-semibold text-gray-900 dark:text-white mt-6 mb-2">Address</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <input placeholder="Street" value={extra.address.street} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  <input placeholder="City" value={extra.address.city} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  <input placeholder="State" value={extra.address.state} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  <input placeholder="Pincode" value={extra.address.pincode} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
-                  <input placeholder="Country" value={extra.address.country} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                  <input placeholder="Street" value={extra.address.street || user?.address?.street || ''} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                  <input placeholder="City" value={extra.address.city || user?.address?.city || ''} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                  <input placeholder="State" value={extra.address.state || user?.address?.state || ''} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                  <input placeholder="Pincode" value={extra.address.pincode || user?.address?.pincode || ''} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
+                  <input placeholder="Country" value={extra.address.country || user?.address?.country || ''} disabled={true} className="px-4 py-3 border rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-500" />
                 </div>
-                {user?.role === 'student' && (
-                  <p className="text-xs text-gray-500 mt-2">Academic information and address cannot be changed. Contact admin for updates.</p>
-                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  {user?.role === 'student' 
+                    ? 'Academic information and address cannot be changed. Contact admin for updates.'
+                    : 'Personal information is managed by Registrar. Contact Registrar for updates.'
+                  }
+                </p>
               </div>
 
               {/* Password Change Section */}

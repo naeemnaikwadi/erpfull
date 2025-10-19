@@ -23,7 +23,7 @@ export default function InstructorDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const instructorId = localStorage.getItem('userId');
+  const instructorId = (JSON.parse(localStorage.getItem('user')||'{}')._id) || localStorage.getItem('userId');
   
   const fetchStats = useCallback(async () => {
     try {
@@ -143,6 +143,14 @@ export default function InstructorDashboard() {
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? '' : ''}
               </button>
+              <a
+                href={`http://localhost:4000/api/instructor/stats/${instructorId}/export.pdf`}
+                target="_blank"
+                rel="noreferrer"
+                className="ml-2 flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+              >
+                Export PDF
+              </a>
             </div>
           </div>
         </section>

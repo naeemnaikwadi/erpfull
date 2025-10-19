@@ -124,12 +124,12 @@ const LandingPage = () => {
               >
                 Sign In
               </Link>
-              <Link
+              {/* <Link
                 to="/register"
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Get Started
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
@@ -151,13 +151,13 @@ const LandingPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/login')}
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg flex items-center space-x-2"
               >
                 <span>Start Learning Free</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
-                              <button
+               <button
                   onClick={() => setIsVideoPlaying(true)}
                   className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-6 py-4 rounded-lg border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
                 >
@@ -249,12 +249,12 @@ const LandingPage = () => {
             Join thousands of educators and students who are already experiencing the future of online education.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
+            {/* <button
               onClick={() => navigate('/register')}
               className="bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg"
             >
               Get Started Free
-            </button>
+            </button> */}
             <button
               onClick={() => navigate('/login')}
               className="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-semibold text-lg"
@@ -313,30 +313,32 @@ const LandingPage = () => {
       </footer>
 
       {/* Video Modal */}
-      {isVideoPlaying && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="text-lg font-semibold">Platform Demo</h3>
-              <button
-                onClick={() => setIsVideoPlaying(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4">
-              <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <Play className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Demo video would play here</p>
-                  <p className="text-sm text-gray-500 mt-2">Showcasing live sessions, course management, and analytics</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+     {/* Video Modal */}
+{isVideoPlaying && (
+  <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div className="relative bg-white rounded-lg max-w-4xl w-full overflow-hidden shadow-xl">
+      {/* Close button */}
+      <button
+        onClick={() => setIsVideoPlaying(false)}
+        className="absolute top-3 right-3 text-gray-600 hover:text-gray-900 text-2xl font-bold"
+      >
+        ✕
+      </button>
+
+      {/* YouTube Video */}
+      <div className="w-full aspect-video">
+        <iframe
+          src="https://www.youtube.com/embed/S6RvRx4V65k"
+          title="Platform Demo"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="w-full h-full"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

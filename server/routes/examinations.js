@@ -6,6 +6,10 @@ const ExamPaperAssignment = require('../models/ExamPaperAssignment');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const Classroom = require('../models/Classroom');
+let PDFDocument;
+try { PDFDocument = require('pdfkit'); } catch (_) {}
+let ExcelJS;
+try { ExcelJS = require('exceljs'); } catch (_) {}
 
 // Get all examinations with filtering and pagination
 router.get('/', auth, async (req, res) => {
@@ -832,6 +836,104 @@ router.get('/export', auth, async (req, res) => {
         res.json(results);
       }
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Consolidated export for exam controller (xlsx/csv/pdf)
+router.get('/reports/consolidated', auth, async (req, res) => {
+  try {
+    if (!['admin', 'exam_controller'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const { format = 'xlsx', type = 'examinations' } = req.query;
+
+    if (format === 'xlsx') {
+      if (!ExcelJS) return res.status(503).json({ message: 'Excel not available' });
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet(type === 'examinations' ? 'Exams' : 'Results');
+      if (type === 'examinations') {
+        ws.columns = [
+          { header: 'Name', key: 'name', width: 30 },
+          { header: 'Type', key: 'type', width: 15 },
+          { header: 'Subject', key: 'subject', width: 25 },
+          { header: 'Course', key: 'course', width: 20 },
+          { header: 'Branch', key: 'branch', width: 20 },
+          { header: 'Semester', key: 'semester', width: 10 },
+          { header: 'Date', key: 'date', width: 20 },
+          { header: 'Status', key: 'status', width: 15 }
+        ];
+        const list = await Examination.find({}).sort({ examDate: 1 });
+        list.forEach(ex => ws.addRow({
+          name: ex.examName || ex.title || '',
+          type: ex.examType,
+          subject: ex.subject,
+          course: ex.course,
+          branch: ex.branch,
+          semester: ex.semester,
+          date: ex.examDate,
+          status: ex.examStatus
+        }));
+      } else {
+        ws.columns = [
+          { header: 'Student ID', key: 'studentId', width: 20 },
+          { header: 'Exam', key: 'exam', width: 30 },
+          { header: 'Subject', key: 'subject', width: 25 },
+          { header: 'Marks', key: 'marks', width: 10 },
+          { header: 'Total', key: 'total', width: 10 },
+          { header: 'Percentage', key: 'percentage', width: 12 },
+          { header: 'Grade', key: 'grade', width: 8 },
+          { header: 'Status', key: 'status', width: 12 }
+        ];
+        const list = await ExamResult.find({}).populate('examId', 'examName subject');
+        list.forEach(r => ws.addRow({
+          studentId: r.studentId,
+          exam: r.examId?.examName || '',
+          subject: r.subject,
+          marks: r.marksObtained,
+          total: r.totalMarks,
+          percentage: r.percentage,
+          grade: r.grade,
+          status: r.status
+        }));
+      }
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=exams_report.xlsx');
+      await wb.xlsx.write(res);
+      res.end();
+      return;
+    }
+
+    if (format === 'pdf') {
+      if (!PDFDocument) return res.status(503).json({ message: 'PDF not available' });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=exams_report.pdf');
+      const doc = new PDFDocument({ margin: 40 });
+      doc.pipe(res);
+      doc.fontSize(18).text('Examinations Report', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12);
+      const totalExaminations = await Examination.countDocuments();
+      const upcoming = await Examination.countDocuments({ examDate: { $gte: new Date() }, examStatus: 'Scheduled' });
+      doc.text(`Total Examinations: ${totalExaminations}`);
+      doc.text(`Upcoming: ${upcoming}`);
+      doc.moveDown();
+      const list = await Examination.find({}).sort({ examDate: 1 }).limit(100);
+      list.forEach(ex => doc.text(`${ex.examName || ex.title || ''} | ${ex.examType} | ${ex.subject} | ${new Date(ex.examDate).toLocaleDateString()} | ${ex.examStatus}`));
+      doc.end();
+      return;
+    }
+
+    // CSV fallback
+    const list = await Examination.find({}).sort({ examDate: 1 });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=exams_report.csv');
+    const header = 'Name,Type,Subject,Course,Branch,Semester,Date,Status';
+    const csv = header + '\n' + list.map(ex => [
+      ex.examName || ex.title || '', ex.examType, ex.subject, ex.course, ex.branch, ex.semester, ex.examDate?.toISOString() || '', ex.examStatus
+    ].join(',')).join('\n');
+    res.send(csv);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

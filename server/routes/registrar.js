@@ -5,6 +5,11 @@ const ExamResult = require('../models/ExamResult');
 const User = require('../models/User');
 const Admission = require('../models/Admission');
 const { auth } = require('../middleware/auth');
+const StudentGroup = require('../models/StudentGroup');
+let PDFDocument;
+try { PDFDocument = require('pdfkit'); } catch (_) {}
+let ExcelJS;
+try { ExcelJS = require('exceljs'); } catch (_) {}
 
 // Apply authentication middleware to all routes
 router.use(auth);
@@ -492,4 +497,233 @@ router.get('/statistics', async (req, res) => {
   }
 });
 
+// Consolidated Registrar Report (CSV or PDF)
+router.get('/reports/consolidated', async (req, res) => {
+  try {
+    const axios = require('axios');
+    const headers = { Authorization: req.headers.authorization || '' };
+
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const [admissions, fees, hostels, examinations] = await Promise.all([
+      axios.get(`${origin}/api/erp/admissions/stats/overview`, { headers }).then(r=>r.data).catch(()=>null),
+      axios.get(`${origin}/api/erp/fees/stats/overview`, { headers }).then(r=>r.data).catch(()=>null),
+      axios.get(`${origin}/api/erp/hostels/dashboard/stats`, { headers }).then(r=>r.data).catch(()=>null),
+      axios.get(`${origin}/api/erp/examinations/stats/overview`, { headers }).then(r=>r.data).catch(()=>null)
+    ]);
+
+    const { format = 'csv' } = req.query;
+
+    if (format === 'xlsx') {
+      if (!ExcelJS) {
+        return res.status(503).json({ message: 'Excel generation not available on this server' });
+      }
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Registrar';
+      wb.created = new Date();
+
+      // Admissions sheet
+      const wsA = wb.addWorksheet('Admissions');
+      wsA.columns = [
+        { header: 'Metric', key: 'metric', width: 30 },
+        { header: 'Value', key: 'value', width: 20 }
+      ];
+      wsA.addRow({ metric: 'Total Admissions', value: admissions?.totalAdmissions || 0 });
+      wsA.addRow({ metric: 'Current Year Admissions', value: admissions?.currentYearAdmissions || 0 });
+      (admissions?.statusBreakdown || []).forEach(s => wsA.addRow({ metric: `Status: ${s._id}`, value: s.count }));
+
+      // Fees sheet
+      const wsF = wb.addWorksheet('Fees');
+      wsF.columns = [
+        { header: 'Metric', key: 'metric', width: 30 },
+        { header: 'Value', key: 'value', width: 20 }
+      ];
+      if (fees?.totalFees) {
+        wsF.addRow({ metric: 'Total Amount', value: fees.totalFees.totalAmount || 0 });
+        wsF.addRow({ metric: 'Paid Amount', value: fees.totalFees.paidAmount || 0 });
+        wsF.addRow({ metric: 'Pending Amount', value: fees.totalFees.pendingAmount || 0 });
+      }
+      (fees?.statusBreakdown || []).forEach(s => wsF.addRow({ metric: `Status: ${s._id}`, value: s.count }));
+
+      // Hostels sheet
+      const wsH = wb.addWorksheet('Hostels');
+      wsH.columns = [
+        { header: 'Metric', key: 'metric', width: 30 },
+        { header: 'Value', key: 'value', width: 20 }
+      ];
+      if (hostels && !hostels.message) {
+        const hs = hostels.hostelStats || {};
+        wsH.addRow({ metric: 'Total Hostels', value: hs.totalHostels || 0 });
+        wsH.addRow({ metric: 'Total Capacity', value: hs.totalCapacity || 0 });
+        wsH.addRow({ metric: 'Current Occupancy', value: hs.currentOccupancy || 0 });
+      } else {
+        wsH.addRow({ metric: 'Access', value: hostels?.message || 'Not authorized' });
+      }
+
+      // Examinations sheet
+      const wsE = wb.addWorksheet('Examinations');
+      wsE.columns = [
+        { header: 'Metric', key: 'metric', width: 30 },
+        { header: 'Value', key: 'value', width: 20 }
+      ];
+      wsE.addRow({ metric: 'Total Examinations', value: examinations?.totalExaminations || 0 });
+      wsE.addRow({ metric: 'Upcoming Examinations', value: examinations?.upcomingExams || 0 });
+      (examinations?.statusBreakdown || []).forEach(s => wsE.addRow({ metric: `Status: ${s._id}`, value: s.count }));
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=registrar_report.xlsx');
+      await wb.xlsx.write(res);
+      res.end();
+      return;
+    }
+
+    if (format === 'pdf') {
+      if (!PDFDocument) {
+        return res.status(503).json({ message: 'PDF generation not available on this server' });
+      }
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=registrar_report.pdf');
+      const doc = new PDFDocument({ margin: 40 });
+      doc.pipe(res);
+      doc.fontSize(18).text('Registrar Consolidated Report', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12);
+      doc.text('Admissions', { underline: true });
+      doc.moveDown(0.5);
+      doc.text(`Total Admissions: ${admissions?.totalAdmissions || 0}`);
+      doc.text(`Current Year Admissions: ${admissions?.currentYearAdmissions || 0}`);
+      (admissions?.statusBreakdown || []).forEach(s => doc.text(`Status ${s._id}: ${s.count}`));
+      doc.moveDown();
+      doc.text('Fees', { underline: true });
+      doc.moveDown(0.5);
+      if (fees?.totalFees) {
+        doc.text(`Total Amount: ${fees.totalFees.totalAmount || 0}`);
+        doc.text(`Paid Amount: ${fees.totalFees.paidAmount || 0}`);
+        doc.text(`Pending Amount: ${fees.totalFees.pendingAmount || 0}`);
+      }
+      (fees?.statusBreakdown || []).forEach(s => doc.text(`Status ${s._id}: ${s.count}`));
+      doc.moveDown();
+      doc.text('Hostels', { underline: true });
+      doc.moveDown(0.5);
+      if (hostels && !hostels.message) {
+        const hs = hostels.hostelStats || {};
+        doc.text(`Total Hostels: ${hs.totalHostels || 0}`);
+        doc.text(`Total Capacity: ${hs.totalCapacity || 0}`);
+        doc.text(`Current Occupancy: ${hs.currentOccupancy || 0}`);
+      } else {
+        doc.text(`Access: ${hostels?.message || 'Not authorized'}`);
+      }
+      doc.moveDown();
+      doc.text('Examinations', { underline: true });
+      doc.moveDown(0.5);
+      doc.text(`Total Examinations: ${examinations?.totalExaminations || 0}`);
+      doc.text(`Upcoming Examinations: ${examinations?.upcomingExams || 0}`);
+      (examinations?.statusBreakdown || []).forEach(s => doc.text(`Status ${s._id}: ${s.count}`));
+      doc.end();
+      return;
+    }
+
+    // Default CSV: flatten sections into simple rows
+    const rows = [];
+    rows.push({ section: 'admissions_total', value: (admissions && admissions.totalAdmissions) || 0 });
+    rows.push({ section: 'admissions_currentYear', value: (admissions && admissions.currentYearAdmissions) || 0 });
+    (admissions?.statusBreakdown || []).forEach(s => rows.push({ section: `admissions_status_${s._id}`, value: s.count }));
+
+    if (fees?.totalFees) {
+      rows.push({ section: 'fees_totalAmount', value: fees.totalFees.totalAmount || 0 });
+      rows.push({ section: 'fees_paidAmount', value: fees.totalFees.paidAmount || 0 });
+      rows.push({ section: 'fees_pendingAmount', value: fees.totalFees.pendingAmount || 0 });
+    }
+    (fees?.statusBreakdown || []).forEach(s => rows.push({ section: `fees_status_${s._id}`, value: s.count }));
+
+    if (hostels && !hostels.message) {
+      const hs = hostels.hostelStats || {};
+      rows.push({ section: 'hostels_totalHostels', value: hs.totalHostels || 0 });
+      rows.push({ section: 'hostels_totalCapacity', value: hs.totalCapacity || 0 });
+      rows.push({ section: 'hostels_currentOccupancy', value: hs.currentOccupancy || 0 });
+    } else {
+      rows.push({ section: 'hostels_access', value: 'Not authorized' });
+    }
+
+    rows.push({ section: 'exams_total', value: examinations?.totalExaminations || 0 });
+    rows.push({ section: 'exams_upcoming', value: examinations?.upcomingExams || 0 });
+    (examinations?.statusBreakdown || []).forEach(s => rows.push({ section: `exams_status_${s._id}`, value: s.count }));
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=registrar_report.csv');
+    const header = 'section,value';
+    const csv = header + '\n' + rows.map(r => `${r.section},${r.value}`).join('\n');
+    res.send(csv);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
+
+// Higher roles listing and update (Registrar-only)
+router.get('/higher-roles', async (req, res) => {
+  try {
+    if (req.user.role !== 'registrar') {
+      return res.status(403).json({ message: 'Registrar only' });
+    }
+    const roles = ['admin','admission_officer','fee_manager','hostel_manager','exam_controller','accountant','registrar','instructor'];
+    const { search, role, page = 1, limit = 20 } = req.query;
+    const q = { role: { $in: roles } }; // Only higher roles, exclude students
+    if (role && roles.includes(role)) q.role = role;
+    if (search) q.$or = [{ name: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }];
+    const users = await User.find(q).select('-password').limit(limit * 1).skip((page - 1) * limit).sort({ createdAt: -1 });
+    const total = await User.countDocuments(q);
+    res.json({ users, total, totalPages: Math.ceil(total / limit), currentPage: page });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/higher-roles/:userId', async (req, res) => {
+  try {
+    if (req.user.role !== 'registrar') {
+      return res.status(403).json({ message: 'Registrar only' });
+    }
+    const allowed = ['admin','admission_officer','fee_manager','hostel_manager','exam_controller','accountant','registrar','instructor'];
+    const user = await User.findById(req.params.userId);
+    if (!user || !allowed.includes(user.role)) return res.status(404).json({ message: 'User not found' });
+    const update = req.body || {};
+    delete update.password;
+    Object.assign(user, update);
+    await user.save();
+    res.json({ 
+      message: 'Updated successfully', 
+      user: { 
+        _id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role, 
+        department: user.department, 
+        designation: user.designation, 
+        employeeId: user.employeeId,
+        joiningDate: user.joiningDate,
+        mobileNo: user.mobileNo,
+        dateOfBirth: user.dateOfBirth,
+        address: user.address
+      } 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Groups management for registrar
+router.get('/groups', async (req, res) => {
+  try {
+    if (req.user.role !== 'registrar') {
+      return res.status(403).json({ message: 'Registrar only' });
+    }
+    const groups = await StudentGroup.find({})
+      .populate('students', 'name email prn course branch semester')
+      .populate('assignedAdmin', 'name email department designation')
+      .sort({ createdAt: -1 });
+    res.json({ groups });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});

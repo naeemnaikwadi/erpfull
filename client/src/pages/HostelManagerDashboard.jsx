@@ -24,6 +24,7 @@ import {
   Bed,
   Home
 } from 'lucide-react';
+import { downloadCSV } from '../utils/download';
 
 const HostelManagerDashboard = () => {
   const { user } = useAuth();
@@ -72,7 +73,10 @@ const HostelManagerDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/erp/hostels/stats/overview');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/erp/hostels/stats/overview', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await response.json();
       
       setStats({
@@ -278,19 +282,33 @@ const HostelManagerDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              const token = localStorage.getItem('token')||'';
+              const res = await fetch('/api/erp/hostels/dashboard/stats', { headers: { Authorization: `Bearer ${token}` }});
+              const data = await res.json();
+              console.log('Hostel report data:', data);
+              alert('Hostel report generated (see console).');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <BarChart3 className="w-8 h-8 text-blue-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Generate Report</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              const token = localStorage.getItem('token')||'';
+              const res = await fetch('/api/erp/hostels/dashboard/stats', { headers: { Authorization: `Bearer ${token}` }});
+              const data = await res.json();
+              console.log('Analytics:', data);
+              alert('Analytics loaded (see console).');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <PieChart className="w-8 h-8 text-green-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Analytics</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              await downloadCSV('/api/erp/hostels/export?format=csv', 'hostels.csv');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <FileText className="w-8 h-8 text-purple-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Export Data</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={()=>alert('Scheduling UI can be integrated here.')} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <Calendar className="w-8 h-8 text-orange-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Schedule</span>
             </button>

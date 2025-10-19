@@ -541,7 +541,7 @@ router.post('/:id/reminder', auth, async (req, res) => {
 // Export fee data
 router.get('/export', auth, async (req, res) => {
   try {
-    if (!['admin', 'fee_manager', 'accountant'].includes(req.user.role)) {
+    if (!['admin', 'fee_manager', 'accountant', 'registrar'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -558,29 +558,40 @@ router.get('/export', auth, async (req, res) => {
       .sort({ createdAt: -1 });
 
     if (format === 'csv') {
-      // Convert to CSV format
+      // Convert to CSV format with robust escaping and null safety
+      const escapeCsv = (value) => {
+        if (value === null || value === undefined) return '';
+        const str = String(value).replace(/\r?\n|\r/g, ' ').replace(/"/g, '""');
+        return /[",\n]/.test(str) ? `"${str}"` : str;
+      };
+
       const csvData = fees.map(fee => ({
-        'Student ID': fee.studentId,
-        'Student Name': `${fee.admissionId.firstName} ${fee.admissionId.lastName}`,
-        'Email': fee.admissionId.email,
-        'Course': fee.course,
-        'Branch': fee.branch,
-        'Semester': fee.semester,
-        'Academic Year': fee.academicYear,
-        'Total Amount': fee.totalAmount,
-        'Paid Amount': fee.paidAmount,
-        'Pending Amount': fee.pendingAmount,
-        'Status': fee.feeStatus,
-        'Due Date': fee.dueDate
+        'Student ID': fee.studentId || '',
+        'Student Name': `${fee.admissionId?.firstName || ''} ${fee.admissionId?.lastName || ''}`.trim(),
+        'Email': fee.admissionId?.email || '',
+        'Course': fee.course || '',
+        'Branch': fee.branch || '',
+        'Semester': fee.semester ?? '',
+        'Academic Year': fee.academicYear || '',
+        'Total Amount': fee.totalAmount ?? 0,
+        'Paid Amount': fee.paidAmount ?? 0,
+        'Pending Amount': fee.pendingAmount ?? 0,
+        'Status': fee.feeStatus || '',
+        'Due Date': fee.dueDate ? new Date(fee.dueDate).toISOString() : ''
       }));
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=fees.csv');
-      
-      // Simple CSV conversion
-      const csv = Object.keys(csvData[0] || {}).join(',') + '\n' +
-        csvData.map(row => Object.values(row).join(',')).join('\n');
-      
+
+      const headers = Object.keys(csvData[0] || {
+        'Student ID': '', 'Student Name': '', 'Email': '', 'Course': '', 'Branch': '',
+        'Semester': '', 'Academic Year': '', 'Total Amount': '', 'Paid Amount': '',
+        'Pending Amount': '', 'Status': '', 'Due Date': ''
+      });
+      const headerLine = headers.map(escapeCsv).join(',');
+      const lines = csvData.map(row => headers.map(h => escapeCsv(row[h])).join(','));
+      const csv = [headerLine, ...lines].join('\n');
+
       res.send(csv);
     } else {
       res.json(fees);

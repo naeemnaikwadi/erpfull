@@ -45,25 +45,28 @@ const RoleBasedDashboard = () => {
       // Fetch statistics based on user role
       const promises = [];
       
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
       if (['admin', 'admission_officer', 'registrar'].includes(role)) {
-        promises.push(fetch('/api/erp/admissions/stats/overview').then(res => res.json()).catch(() => null));
+        promises.push(fetch('/api/erp/admissions/stats/overview', { headers }).then(res => res.json()).catch(() => null));
       }
       
       if (['admin', 'fee_manager', 'accountant', 'registrar'].includes(role)) {
-        promises.push(fetch('/api/erp/fees/stats/overview').then(res => res.json()).catch(() => null));
+        promises.push(fetch('/api/erp/fees/stats/overview', { headers }).then(res => res.json()).catch(() => null));
       }
       
       if (['admin', 'hostel_manager', 'registrar'].includes(role)) {
-        promises.push(fetch('/api/erp/hostels/stats/overview').then(res => res.json()).catch(() => null));
+        promises.push(fetch('/api/erp/hostels/stats/overview', { headers }).then(res => res.json()).catch(() => null));
       }
       
       if (['admin', 'exam_controller', 'registrar'].includes(role)) {
-        promises.push(fetch('/api/erp/examinations/stats/overview').then(res => res.json()).catch(() => null));
+        promises.push(fetch('/api/erp/examinations/stats/overview', { headers }).then(res => res.json()).catch(() => null));
       }
 
       // For student and instructor roles, fetch learning-related stats
       if (['student', 'instructor'].includes(role)) {
-        promises.push(fetch('/api/learning/stats').then(res => res.json()).catch(() => null));
+        promises.push(fetch('/api/learning/stats', { headers }).then(res => res.json()).catch(() => null));
       }
 
       const results = await Promise.all(promises);
@@ -353,12 +356,23 @@ const RoleBasedDashboard = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {getRoleTitle()}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {getRoleDescription()}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {getRoleTitle()}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                {getRoleDescription()}
+              </p>
+            </div>
+            <button 
+              onClick={fetchDashboardData}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+            >
+              <Activity className="w-4 h-4" />
+              <span>Refresh Data</span>
+            </button>
+          </div>
         </div>
 
         {/* Quick Stats */}

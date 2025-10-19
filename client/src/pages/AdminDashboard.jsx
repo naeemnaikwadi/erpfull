@@ -9,7 +9,8 @@ import {
   Plus, Search, Edit, Trash2, Eye,
   UserPlus, Settings, Activity, Filter,
   BarChart3, PieChart, LineChart, Download,
-  RefreshCw, AlertCircle, CheckCircle, XCircle, FileText
+  RefreshCw, AlertCircle, CheckCircle, XCircle, FileText,
+  Mail, MessageSquare
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -57,36 +58,41 @@ export default function AdminDashboard() {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Fetch dashboard stats
-      const statsResponse = await fetch('http://localhost:4000/api/admin/dashboard-stats', { headers });
+      // Fetch only essential data first for faster loading
+      const [statsResponse, usersResponse] = await Promise.all([
+        fetch('http://localhost:4000/api/admin/dashboard-stats', { headers }),
+        fetch('http://localhost:4000/api/admin/users?limit=10', { headers })
+      ]);
+
       const statsData = await statsResponse.json();
-      setStats(statsData);
-
-      // Fetch users
-      const usersResponse = await fetch('http://localhost:4000/api/admin/users?limit=10', { headers });
       const usersData = await usersResponse.json();
-      setUsers(usersData.users || []);
+      
+      setStats(statsData);
+      setUsers((usersData.users || []).filter(u => !['admin','admission_officer','fee_manager','hostel_manager','exam_controller','accountant','registrar','instructor'].includes(u.role)));
+      
+      // Fetch additional data in background
+      setTimeout(async () => {
+        try {
+          const [classroomsResponse, coursesResponse, liveSessionsResponse, learningPathsResponse] = await Promise.all([
+            fetch('http://localhost:4000/api/admin/classrooms?limit=10', { headers }),
+            fetch('http://localhost:4000/api/admin/courses?limit=10', { headers }),
+            fetch('http://localhost:4000/api/admin/live-sessions?limit=10', { headers }),
+            fetch('http://localhost:4000/api/admin/learning-paths?limit=10', { headers })
+          ]);
 
-      // Fetch classrooms
-      const classroomsResponse = await fetch('http://localhost:4000/api/admin/classrooms?limit=10', { headers });
-      const classroomsData = await classroomsResponse.json();
-      setClassrooms(classroomsData.classrooms || []);
+          const classroomsData = await classroomsResponse.json();
+          const coursesData = await coursesResponse.json();
+          const liveSessionsData = await liveSessionsResponse.json();
+          const learningPathsData = await learningPathsResponse.json();
 
-      // Fetch courses
-      const coursesResponse = await fetch('http://localhost:4000/api/admin/courses?limit=10', { headers });
-      const coursesData = await coursesResponse.json();
-      setCourses(coursesData.courses || []);
-
-      // Fetch live sessions
-      const liveSessionsResponse = await fetch('http://localhost:4000/api/admin/live-sessions?limit=10', { headers });
-      const liveSessionsData = await liveSessionsResponse.json();
-      setLiveSessions(liveSessionsData.liveSessions || []);
-
-      // Fetch learning paths
-      const learningPathsResponse = await fetch('http://localhost:4000/api/admin/learning-paths?limit=10', { headers });
-      const learningPathsData = await learningPathsResponse.json();
-      console.log('Learning paths response:', learningPathsData);
-      setLearningPaths(learningPathsData.learningPaths || []);
+          setClassrooms(classroomsData.classrooms || []);
+          setCourses(coursesData.courses || []);
+          setLiveSessions(liveSessionsData.liveSessions || []);
+          setLearningPaths(learningPathsData.learningPaths || []);
+        } catch (error) {
+          console.error('Error fetching additional data:', error);
+        }
+      }, 100);
 
       setLoading(false);
     } catch (error) {
@@ -240,13 +246,13 @@ export default function AdminDashboard() {
   const handleAssignInstructor = async (classroomId, instructorId) => {
     try {
       const token = localStorage.getItem('token');
-              const response = await fetch(`http://localhost:4000/api/admin/classrooms/${classroomId}/assign-instructor`, {
-        method: 'PUT',
+      const response = await fetch(`http://localhost:4000/api/admin/assign-instructor-to-classroom`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ instructorId })
+        body: JSON.stringify({ classroomId, instructorId })
       });
 
       if (response.ok) {
@@ -256,7 +262,7 @@ export default function AdminDashboard() {
         alert('Instructor assigned successfully!');
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to assign instructor');
+        alert(error.message || 'Failed to assign instructor');
       }
     } catch (error) {
       console.error('Error assigning instructor:', error);
@@ -570,7 +576,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards + Assigned Students for this Admin */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
             <div className="flex items-center justify-between">
@@ -587,7 +593,6 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab('users')}
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
-                View All →
               </button>
             </div>
           </div>
@@ -606,7 +611,6 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab('users')}
                 className="text-green-600 hover:text-green-800 text-sm font-medium"
               >
-                View All →
               </button>
             </div>
           </div>
@@ -625,7 +629,6 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab('users')}
                 className="text-purple-600 hover:text-purple-800 text-sm font-medium"
               >
-                View All →
               </button>
             </div>
           </div>
@@ -644,9 +647,46 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab('classrooms')}
                 className="text-orange-600 hover:text-orange-800 text-sm font-medium"
               >
-                View All →
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Assigned Students (via Groups) */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">My Assigned Groups</h3>
+            <button
+              onClick={async ()=>{
+                try{
+                  const token = localStorage.getItem('token');
+                  const res = await fetch('http://localhost:4000/api/erp/groups/my-assigned-students',{ headers: { Authorization: `Bearer ${token}` }});
+                  const data = await res.json();
+                  setAvailableStudents(data.groups || []);
+                }catch(e){}
+              }}
+              className="text-sm px-3 py-1 border rounded"
+            >Refresh</button>
+          </div>
+          <div className="space-y-4">
+            {availableStudents.map(g => (
+              <div key={g._id} className="border rounded p-4 dark:border-gray-700">
+                <div className="font-semibold text-gray-900 dark:text-white mb-2">{g.name}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {(g.students || []).map(s => (
+                    <div key={s._id} className="bg-gray-50 dark:bg-gray-700 p-2 rounded text-xs">
+                      <div className="font-medium">{s.name}</div>
+                      <div className="text-gray-500">{s.email}</div>
+                      <div>PRN: {s.prn || '—'}</div>
+                      <div>{s.course} {s.branch} Sem {s.semester || '—'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {availableStudents.length === 0 && (
+              <div className="text-sm text-gray-500">No groups assigned to you yet.</div>
+            )}
           </div>
         </div>
 
@@ -667,7 +707,6 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab('courses')}
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
-                View All →
               </button>
             </div>
           </div>
@@ -686,7 +725,6 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab('live-sessions')}
                 className="text-green-600 hover:text-green-800 text-sm font-medium"
               >
-                View All →
               </button>
             </div>
           </div>
@@ -705,7 +743,6 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab('learning-paths')}
                 className="text-purple-600 hover:text-purple-800 text-sm font-medium"
               >
-                View All →
               </button>
             </div>
           </div>
@@ -720,8 +757,9 @@ export default function AdminDashboard() {
                 { id: 'users', label: 'User Management', icon: <Users size={20} /> },
                 { id: 'classrooms', label: 'Classrooms', icon: <Target size={20} /> },
                 { id: 'courses', label: 'Courses', icon: <BookOpen size={20} /> },
+                { id: 'attendance', label: 'Attendance Management', icon: <Calendar size={20} /> },
                 { id: 'live-sessions', label: 'Live Sessions', icon: <Video size={20} /> },
-                { id: 'learning-paths', label: 'Learning Paths', icon: <TrendingUp size={20} /> }
+                // { id: 'learning-paths', label: 'Learning Paths', icon: <TrendingUp size={20} /> }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -900,6 +938,13 @@ export default function AdminDashboard() {
                       <span className="text-sm">Manage Groups</span>
                     </button>
                     <button 
+                      onClick={() => window.location.href = '/admin/communication'}
+                      className="bg-white/20 hover:bg-white/30 p-3 rounded-lg transition-colors"
+                    >
+                      <Mail className="w-6 h-6 mx-auto mb-2" />
+                      <span className="text-sm">Student Communication</span>
+                    </button>
+                    <button 
                       onClick={() => window.location.href = '/admin/exam-assignments'}
                       className="bg-white/20 hover:bg-white/30 p-3 rounded-lg transition-colors"
                     >
@@ -937,14 +982,14 @@ export default function AdminDashboard() {
                       <span className="text-sm">Add Admin</span>
                     </button>
                     <button
-                      onClick={() => navigate('/admin/classrooms/create')}
+                      onClick={() => setShowClassroomModal(true)}
                       className="bg-white/20 hover:bg-white/30 p-3 rounded-lg transition-colors"
                     >
                       <Target className="w-6 h-6 mx-auto mb-2" />
                       <span className="text-sm">Create Classroom</span>
                     </button>
                     <button
-                      onClick={() => navigate('/admin/courses/create')}
+                      onClick={() => setShowCourseModal(true)}
                       className="bg-white/20 hover:bg-white/30 p-3 rounded-lg transition-colors"
                     >
                       <BookOpen className="w-6 h-6 mx-auto mb-2" />
@@ -1242,6 +1287,173 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'attendance' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Attendance Management</h3>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => window.location.href = '/admin/attendance/overview'}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Calendar className="w-4 h-4 inline mr-2" />
+                      View Attendance Overview
+                    </button>
+                    <button
+                      onClick={() => window.location.href = '/admin/attendance/assignments'}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Users className="w-4 h-4 inline mr-2" />
+                      Manage Assignments
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Classrooms</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalClassrooms || 0}</p>
+                      </div>
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <Target className="w-6 h-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Instructors</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalInstructors || 0}</p>
+                      </div>
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <Users className="w-6 h-6 text-green-600" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalCourses || 0}</p>
+                      </div>
+                      <div className="p-3 bg-purple-100 rounded-full">
+                        <BookOpen className="w-6 h-6 text-purple-600" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalStudents || 0}</p>
+                      </div>
+                      <div className="p-3 bg-orange-100 rounded-full">
+                        <Users2 className="w-6 h-6 text-orange-600" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Assignment Management */}
+                <div className="bg-white dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-semibold mb-4">Classroom & Course Assignments</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h5 className="font-medium mb-3">Classroom Management</h5>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => setShowClassroomModal(true)}
+                          className="w-full text-left p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Plus className="w-4 h-4 text-blue-600" />
+                            <span>Create New Classroom</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => window.location.href = '/admin/classrooms'}
+                          className="w-full text-left p-3 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Target className="w-4 h-4 text-green-600" />
+                            <span>Manage Classrooms</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => window.location.href = '/admin/instructor-assignments'}
+                          className="w-full text-left p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Users className="w-4 h-4 text-purple-600" />
+                            <span>Assign Instructors</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="font-medium mb-3">Course Management</h5>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => setShowCourseModal(true)}
+                          className="w-full text-left p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Plus className="w-4 h-4 text-blue-600" />
+                            <span>Create New Course</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => window.location.href = '/admin/courses'}
+                          className="w-full text-left p-3 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="w-4 h-4 text-green-600" />
+                            <span>Manage Courses</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => window.location.href = '/admin/attendance/reports'}
+                          className="w-full text-left p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <BarChart3 className="w-4 h-4 text-orange-600" />
+                            <span>Attendance Reports</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Assignments */}
+                <div className="bg-white dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-semibold mb-4">Recent Classroom Assignments</h4>
+                  <div className="space-y-3">
+                    {classrooms.slice(0, 5).map((classroom) => (
+                      <div key={classroom._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-600 rounded-lg">
+                        <div>
+                          <p className="font-medium">{classroom.name}</p>
+                          <p className="text-sm text-gray-500">
+                            Instructor: {classroom.instructor ? classroom.instructor.name : 'Not assigned'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Students: {classroom.students ? classroom.students.length : 0}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button className="text-blue-600 hover:text-blue-800 text-sm">View Details</button>
+                          <button className="text-green-600 hover:text-green-800 text-sm">Manage</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

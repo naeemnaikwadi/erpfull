@@ -2,7 +2,12 @@ const express = require('express');
 const router = express.Router();
 const Admission = require('../models/Admission');
 const User = require('../models/User');
+const StudentGroup = require('../models/StudentGroup');
 const { auth } = require('../middleware/auth');
+let PDFDocument;
+try { PDFDocument = require('pdfkit'); } catch (_) {}
+let ExcelJS;
+try { ExcelJS = require('exceljs'); } catch (_) {}
 
 // Get all admissions with filtering and pagination
 router.get('/', auth, async (req, res) => {
@@ -28,6 +33,20 @@ router.get('/', auth, async (req, res) => {
           { studentId: regex }
         ]
       });
+    }
+
+    // If admin, restrict visibility to admissions belonging to students in groups assigned to this admin
+    if (req.user.role === 'admin') {
+      const groups = await StudentGroup.find({ assignedAdmin: req.user.id }).select('students');
+      const studentIds = [...new Set(groups.flatMap(g => (g.students || []).map(id => id.toString())) )];
+      if (studentIds.length === 0) {
+        // No assigned groups => admin sees none
+        return res.json({ admissions: [], totalPages: 0, currentPage: page, total: 0 });
+      }
+      const students = await User.find({ _id: { $in: studentIds } }).select('email prn');
+      const allowedEmails = students.map(s => s.email).filter(Boolean);
+      const allowedPrns = students.map(s => s.prn).filter(Boolean);
+      Object.assign(filter, { $or: [ { email: { $in: allowedEmails } }, { studentId: { $in: allowedPrns } } ] });
     }
 
     const admissions = await Admission.find(filter)
@@ -187,7 +206,22 @@ router.delete('/:id', auth, async (req, res) => {
 // Get admission statistics
 router.get('/stats/overview', auth, async (req, res) => {
   try {
+    // Build restriction filter for admin
+    let match = {};
+    if (req.user.role === 'admin') {
+      const groups = await StudentGroup.find({ assignedAdmin: req.user.id }).select('students');
+      const studentIds = [...new Set(groups.flatMap(g => (g.students || []).map(id => id.toString())) )];
+      if (studentIds.length === 0) {
+        return res.json({ statusBreakdown: [], totalAdmissions: 0, currentYearAdmissions: 0 });
+      }
+      const students = await User.find({ _id: { $in: studentIds } }).select('email prn');
+      const allowedEmails = students.map(s => s.email).filter(Boolean);
+      const allowedPrns = students.map(s => s.prn).filter(Boolean);
+      match = { $or: [ { email: { $in: allowedEmails } }, { studentId: { $in: allowedPrns } } ] };
+    }
+
     const stats = await Admission.aggregate([
+      { $match: match },
       {
         $group: {
           _id: '$admissionStatus',
@@ -196,10 +230,11 @@ router.get('/stats/overview', auth, async (req, res) => {
       }
     ]);
 
-    const totalAdmissions = await Admission.countDocuments();
+    const totalAdmissions = await Admission.countDocuments(match);
     const currentYear = new Date().getFullYear();
     const currentYearAdmissions = await Admission.countDocuments({
-      academicYear: currentYear.toString()
+      academicYear: currentYear.toString(),
+      ...match
     });
 
     res.json({
@@ -288,9 +323,23 @@ router.get('/dashboard/stats', auth, async (req, res) => {
     }
 
     const currentYear = new Date().getFullYear().toString();
+    // Restrict for admin
+    let match = {};
+    if (req.user.role === 'admin') {
+      const groups = await StudentGroup.find({ assignedAdmin: req.user.id }).select('students');
+      const studentIds = [...new Set(groups.flatMap(g => (g.students || []).map(id => id.toString())) )];
+      if (studentIds.length === 0) {
+        return res.json({ admissionStats: [], courseStats: [], recentAdmissions: [], monthlyTrends: [], totalAdmissions: 0, currentYearAdmissions: 0 });
+      }
+      const students = await User.find({ _id: { $in: studentIds } }).select('email prn');
+      const allowedEmails = students.map(s => s.email).filter(Boolean);
+      const allowedPrns = students.map(s => s.prn).filter(Boolean);
+      match = { $or: [ { email: { $in: allowedEmails } }, { studentId: { $in: allowedPrns } } ] };
+    }
     
     // Get admission statistics
     const admissionStats = await Admission.aggregate([
+      { $match: match },
       {
         $group: {
           _id: '$admissionStatus',
@@ -301,6 +350,7 @@ router.get('/dashboard/stats', auth, async (req, res) => {
 
     // Get course-wise statistics
     const courseStats = await Admission.aggregate([
+      { $match: match },
       {
         $group: {
           _id: '$course',
@@ -310,13 +360,14 @@ router.get('/dashboard/stats', auth, async (req, res) => {
     ]);
 
     // Get recent admissions
-    const recentAdmissions = await Admission.find()
+    const recentAdmissions = await Admission.find(match)
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
       .limit(5);
 
     // Get monthly admission trends
     const monthlyTrends = await Admission.aggregate([
+      { $match: match },
       {
         $group: {
           _id: {
@@ -335,8 +386,8 @@ router.get('/dashboard/stats', auth, async (req, res) => {
       courseStats,
       recentAdmissions,
       monthlyTrends,
-      totalAdmissions: await Admission.countDocuments(),
-      currentYearAdmissions: await Admission.countDocuments({ academicYear: currentYear })
+      totalAdmissions: await Admission.countDocuments(match),
+      currentYearAdmissions: await Admission.countDocuments({ academicYear: currentYear, ...match })
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -377,7 +428,7 @@ router.post('/bulk-approve', auth, async (req, res) => {
 // Export admissions data
 router.get('/export', auth, async (req, res) => {
   try {
-    if (!['admin', 'admission_officer'].includes(req.user.role)) {
+    if (!['admin', 'admission_officer', 'registrar'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -387,6 +438,19 @@ router.get('/export', auth, async (req, res) => {
     if (status) filter.admissionStatus = status;
     if (course) filter.course = course;
     if (academicYear) filter.academicYear = academicYear;
+
+    // Restrict for admin to assigned groups
+    if (req.user.role === 'admin') {
+      const groups = await StudentGroup.find({ assignedAdmin: req.user.id }).select('students');
+      const studentIds = [...new Set(groups.flatMap(g => (g.students || []).map(id => id.toString())) )];
+      if (studentIds.length === 0) {
+        return res.json([]);
+      }
+      const students = await User.find({ _id: { $in: studentIds } }).select('email prn');
+      const allowedEmails = students.map(s => s.email).filter(Boolean);
+      const allowedPrns = students.map(s => s.prn).filter(Boolean);
+      Object.assign(filter, { $or: [ { email: { $in: allowedEmails } }, { studentId: { $in: allowedPrns } } ] });
+    }
 
     const admissions = await Admission.find(filter)
       .populate('createdBy', 'name email')
@@ -420,6 +484,78 @@ router.get('/export', auth, async (req, res) => {
     } else {
       res.json(admissions);
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Consolidated export for admissions (xlsx/csv/pdf)
+router.get('/reports/consolidated', auth, async (req, res) => {
+  try {
+    if (!['admin', 'admission_officer', 'registrar'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const { format = 'xlsx' } = req.query;
+
+    if (format === 'xlsx') {
+      if (!ExcelJS) return res.status(503).json({ message: 'Excel not available' });
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Admissions');
+      ws.columns = [
+        { header: 'Student ID', key: 'studentId', width: 16 },
+        { header: 'Name', key: 'name', width: 24 },
+        { header: 'Email', key: 'email', width: 28 },
+        { header: 'Course', key: 'course', width: 16 },
+        { header: 'Branch', key: 'branch', width: 16 },
+        { header: 'Semester', key: 'semester', width: 10 },
+        { header: 'Year', key: 'year', width: 10 },
+        { header: 'Status', key: 'status', width: 14 }
+      ];
+      const list = await Admission.find({}).sort({ createdAt: -1 });
+      list.forEach(a => ws.addRow({
+        studentId: a.studentId,
+        name: `${a.firstName} ${a.lastName}`,
+        email: a.email,
+        course: a.course,
+        branch: a.branch,
+        semester: a.semester,
+        year: a.academicYear,
+        status: a.admissionStatus
+      }));
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=admissions_report.xlsx');
+      await wb.xlsx.write(res);
+      res.end();
+      return;
+    }
+
+    if (format === 'pdf') {
+      if (!PDFDocument) return res.status(503).json({ message: 'PDF not available' });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=admissions_report.pdf');
+      const doc = new PDFDocument({ margin: 40 });
+      doc.pipe(res);
+      doc.fontSize(18).text('Admissions Report', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12);
+      const total = await Admission.countDocuments();
+      doc.text(`Total Admissions: ${total}`);
+      doc.moveDown();
+      const list = await Admission.find({}).sort({ createdAt: -1 }).limit(100);
+      list.forEach(a => doc.text(`${a.studentId} | ${a.firstName} ${a.lastName} | ${a.email} | ${a.course} | ${a.branch} | ${a.semester} | ${a.academicYear} | ${a.admissionStatus}`));
+      doc.end();
+      return;
+    }
+
+    // CSV fallback
+    const list = await Admission.find({}).sort({ createdAt: -1 });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=admissions_report.csv');
+    const header = 'Student ID,Name,Email,Course,Branch,Semester,Year,Status';
+    const csv = header + '\n' + list.map(a => [
+      a.studentId, `${a.firstName} ${a.lastName}`, a.email, a.course, a.branch, a.semester, a.academicYear, a.admissionStatus
+    ].join(',')).join('\n');
+    res.send(csv);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

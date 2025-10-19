@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { useAuth } from './context/authContext';
 import AuthNavigator from './components/AuthNavigator';
 import LandingPage from './pages/LandingPage';
@@ -14,6 +14,8 @@ import LiveSessionsPage from './pages/LiveSessionsPage';
 import CreateLiveSession from './pages/CreateLiveSession';
 import JoinLiveSession from './pages/JoinLiveSession';
 import '@livekit/components-styles';
+import ChatWidget from './components/ChatWidget';
+import { useLocation } from 'react-router-dom';
 import DashboardLayout from './components/DashboardLayout';
 import CreateClassroom from './pages/CreateClassroom';
 import CreateCourse from './pages/CreateCourse';
@@ -46,6 +48,7 @@ import InstructorReviews from './pages/InstructorReviews';
 import LiveSessionsDashboard from './pages/LiveSessionsDashboard';
 import DownloadsDashboard from './pages/DownloadsDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminCommunicationPage from './pages/AdminCommunicationPage';
 import AdminUserManagement from './pages/AdminUserManagement';
 import AdminClassroomManagement from './pages/AdminClassroomManagement';
 import AdminClassroomDetail from './pages/AdminClassroomDetail';
@@ -57,6 +60,11 @@ import RoleBasedDashboard from './pages/RoleBasedDashboard';
 import FeeManagerDashboard from './pages/FeeManagerDashboard';
 import AdmissionOfficerDashboard from './pages/AdmissionOfficerDashboard';
 import RegistrarDashboard from './pages/RegistrarDashboard';
+import LibrarianDashboard from './pages/LibrarianDashboard';
+import StudentLibrary from './pages/StudentLibrary';
+import InstructorAttendance from './pages/InstructorAttendance';
+import StudentAttendance from './pages/StudentAttendance';
+import AdminAttendance from './pages/AdminAttendance';
 import HostelManagerDashboard from './pages/HostelManagerDashboard';
 import ExamControllerDashboard from './pages/ExamControllerDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
@@ -81,6 +89,7 @@ import SetupPage from './pages/SetupPage';
 
 function App() {
   const { isLoading } = useAuth();
+  const location = useLocation();
 
   // Show loading screen while checking persistent login
   if (isLoading) {
@@ -95,9 +104,28 @@ function App() {
     );
   }
 
+  const hideChat = (() => {
+    const path = location.pathname;
+    // Hide on learning path page, quiz pages, and live session pages
+    const patterns = [
+      /^\/learning-session\//,
+      /^\/create-learning-path$/,
+      /^\/learning-paths$/,
+      /^\/quizzes$/,
+      /^\/instructor\/quizzes/,
+      /^\/course\/.*\/doubts$/, // keep visible? requested hide: quiz and live, also learning path
+      /^\/live-session(\/.*)?$/,
+      /^\/live-sessions(.*)?$/,
+      /^\/student\/live-sessions$/,
+      /^\/join\//
+    ];
+    return patterns.some(rx => rx.test(path));
+  })();
+
   return (
-    <Router>
+    <>
       <AuthNavigator />
+      {!hideChat && <ChatWidget />}
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
@@ -416,14 +444,22 @@ function App() {
         />
 
         {/* Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute role="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute role="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/communication"
+            element={
+              <ProtectedRoute role="admin">
+                <AdminCommunicationPage />
+              </ProtectedRoute>
+            }
+          />
         <Route
           path="/admin/groups"
           element={
@@ -591,6 +627,52 @@ function App() {
           }
         />
 
+        {/* Librarian Routes */}
+        <Route
+          path="/librarian"
+          element={
+            <ProtectedRoute role="librarian">
+              <LibrarianDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student Library Routes */}
+        <Route
+          path="/student-library"
+          element={
+            <ProtectedRoute role="student">
+              <StudentLibrary />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Attendance Routes */}
+        <Route
+          path="/instructor/attendance"
+          element={
+            <ProtectedRoute role="instructor">
+              <InstructorAttendance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/attendance"
+          element={
+            <ProtectedRoute role="student">
+              <StudentAttendance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/attendance"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminAttendance />
+            </ProtectedRoute>
+          }
+        />
+
         {/* ERP Routes */}
         <Route
           path="/erp/dashboard"
@@ -697,7 +779,7 @@ function App() {
           element={<SetupPage />}
         />
       </Routes>
-    </Router>
+    </>
   );
 }
 

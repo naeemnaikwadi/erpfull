@@ -25,6 +25,7 @@ import {
   Target,
   GraduationCap
 } from 'lucide-react';
+import { downloadCSV } from '../utils/download';
 
 const ExamControllerDashboard = () => {
   const { user } = useAuth();
@@ -282,15 +283,22 @@ const ExamControllerDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              try { await downloadCSV('/api/erp/examinations/reports/consolidated?format=xlsx', 'exams_report.xlsx'); }
+              catch { await downloadCSV('/api/erp/examinations/reports/consolidated?format=csv', 'exams_report.csv'); }
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <BarChart3 className="w-8 h-8 text-blue-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Generate Report</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              await downloadCSV('/api/erp/examinations/reports/consolidated?format=pdf', 'exams_report.pdf');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <PieChart className="w-8 h-8 text-green-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Analytics</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              await downloadCSV('/api/erp/examinations/export?format=csv&type=examinations', 'examinations.csv');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <FileText className="w-8 h-8 text-purple-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Export Data</span>
             </button>

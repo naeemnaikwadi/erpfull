@@ -17,7 +17,8 @@ import {
   Receipt,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  BookOpen
 } from 'lucide-react';
 
 const StudentERPView = () => {
@@ -300,12 +301,23 @@ const StudentERPView = () => {
       const alloc = await API.get('/student/hostel');
       const allocId = alloc?.data?._id;
       if (!allocId) return;
-      const { data } = await API.get(`/erp/hostels/allocations/${allocId}/receipt`);
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      
+      // Request PDF format
+      const response = await fetch(`http://localhost:4000/api/erp/hostels/allocations/${allocId}/receipt?format=pdf`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to download receipt');
+      }
+      
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `hostel_receipt_${data.receiptNumber || allocId}.json`;
+      a.download = `hostel_receipt_${allocId}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -370,7 +382,8 @@ const StudentERPView = () => {
                 { id: 'admission', label: 'Admission', icon: <UserPlus className="w-4 h-4" /> },
                 { id: 'fees', label: 'Fees', icon: <DollarSign className="w-4 h-4" /> },
                 { id: 'hostel', label: 'Hostel', icon: <Building className="w-4 h-4" /> },
-                { id: 'examinations', label: 'Examinations', icon: <ClipboardList className="w-4 h-4" /> }
+                { id: 'examinations', label: 'Examinations', icon: <ClipboardList className="w-4 h-4" /> },
+                { id: 'library', label: 'Library', icon: <BookOpen className="w-4 h-4" /> }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -780,6 +793,63 @@ const StudentERPView = () => {
                     <p className="text-gray-500 dark:text-gray-400">No examination data found</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'library' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Library Information
+                </h2>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Library Access</h3>
+                      <p className="text-blue-700 dark:text-blue-300">Browse books, check your issued books, and manage your library account</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Available Books</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Browse and search through the library catalog</p>
+                      <button 
+                        onClick={() => window.open('/student-library', '_blank')}
+                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Browse Books
+                      </button>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">My Books</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">View your currently issued books and due dates</p>
+                      <button 
+                        onClick={() => window.open('/student-library', '_blank')}
+                        className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        My Library Account
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">Library Guidelines</p>
+                        <ul className="text-sm text-yellow-700 dark:text-yellow-300 mt-1 space-y-1">
+                          <li>• Maximum 5 books can be issued at a time</li>
+                          <li>• Books are issued for 14 days and can be renewed up to 3 times</li>
+                          <li>• Late return charges: ₹5 per day</li>
+                          <li>• Contact librarian for book requests and renewals</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

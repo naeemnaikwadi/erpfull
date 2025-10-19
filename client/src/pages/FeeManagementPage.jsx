@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import API from '../services/api';
+import { downloadCSV } from '../utils/download';
 import DashboardLayout from '../components/DashboardLayout';
 import {
   DollarSign,
@@ -505,7 +506,7 @@ const FeeManagementPage = () => {
             <Plus className="w-4 h-4" />
             <span>Add Fee</span>
           </button>
-          <button onClick={() => window.open('/api/erp/fees/export?format=csv', '_blank')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
+          <button onClick={() => downloadCSV('/api/erp/fees/export?format=csv', 'fees.csv')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
@@ -617,7 +618,7 @@ const FeeManagementPage = () => {
             <option value="2026">2026</option>
           </select>
           <div className="flex items-center gap-2">
-            <button onClick={() => window.open('/api/erp/fees/export?format=csv', '_blank')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2">
+            <button onClick={() => downloadCSV('/api/erp/fees/export?format=csv', 'fees.csv')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2">
               <Download className="w-4 h-4" />
               <span>Export</span>
             </button>

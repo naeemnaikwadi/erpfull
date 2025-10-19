@@ -23,6 +23,7 @@ import {
   TrendingUp,
   AlertCircle
 } from 'lucide-react';
+import { downloadCSV } from '../utils/download';
 
 const AdmissionOfficerDashboard = () => {
   const { user } = useAuth();
@@ -47,6 +48,8 @@ const AdmissionOfficerDashboard = () => {
     fetchStats();
   }, [currentPage, statusFilter, courseFilter]);
 
+  // No auto polling; data refreshes on filter/page change
+
   const fetchAdmissions = async () => {
     try {
       setLoading(true);
@@ -57,7 +60,11 @@ const AdmissionOfficerDashboard = () => {
         ...(courseFilter !== 'all' && { course: courseFilter })
       });
 
-      const response = await fetch(`/api/erp/admissions?${params}`);
+      const response = await fetch(`/api/erp/admissions?${params}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      });
       const data = await response.json();
       
       setAdmissions(data.admissions || []);
@@ -71,7 +78,11 @@ const AdmissionOfficerDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/erp/admissions/stats/overview');
+      const response = await fetch('/api/erp/admissions/stats/overview', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      });
       const data = await response.json();
       
       setStats({
@@ -83,6 +94,15 @@ const AdmissionOfficerDashboard = () => {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
+  };
+
+  const exportAdmissions = () => {
+    const params = new URLSearchParams({
+      format: 'csv',
+      ...(statusFilter !== 'all' && { status: statusFilter }),
+      ...(courseFilter !== 'all' && { course: courseFilter })
+    });
+    window.open(`/api/erp/admissions/export?${params.toString()}`, '_blank');
   };
 
   const handleStatusChange = async (admissionId, newStatus) => {
@@ -324,15 +344,22 @@ const AdmissionOfficerDashboard = () => {
               <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Manage Groups</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              try { await downloadCSV('/api/erp/admissions/reports/consolidated?format=xlsx', 'admissions_report.xlsx'); }
+              catch { await downloadCSV('/api/erp/admissions/reports/consolidated?format=csv', 'admissions_report.csv'); }
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <BarChart3 className="w-8 h-8 text-green-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Generate Report</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              await downloadCSV('/api/erp/admissions/reports/consolidated?format=pdf', 'admissions_report.pdf');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <PieChart className="w-8 h-8 text-purple-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Analytics</span>
             </button>
-            <button className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={async()=>{
+              await downloadCSV('/api/erp/admissions/export?format=csv', 'admissions.csv');
+            }} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <FileText className="w-8 h-8 text-orange-500 mx-auto mb-2" />
               <span className="text-sm font-medium">Export Data</span>
             </button>
@@ -374,7 +401,7 @@ const AdmissionOfficerDashboard = () => {
               <option value="BBA">BBA</option>
               <option value="MBA">MBA</option>
             </select>
-            <button className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2">
+            <button onClick={exportAdmissions} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2">
               <Download className="w-4 h-4" />
               <span>Export</span>
             </button>

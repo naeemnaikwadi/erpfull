@@ -124,6 +124,7 @@ export default function DashboardLayout({ role, children }) {
       case 'exam_controller': return '/exam-controller';
       case 'accountant': return '/accountant';
       case 'registrar': return '/registrar';
+      case 'librarian': return '/librarian';
       default: return '/dashboard';
     }
   })();
@@ -132,17 +133,18 @@ export default function DashboardLayout({ role, children }) {
     ? [
         { label: 'Admin Dashboard', path: '/admin', icon: <LayoutDashboard size={18} /> },
         { label: 'User Management', path: '/admin/users', icon: <Users size={18} /> },
+        { label: 'Attendance', path: '/admin/attendance', icon: <Users size={18} /> },
         { label: 'Classrooms', path: '/admin/classrooms', icon: <Target size={18} /> },
         { label: 'Courses', path: '/admin/courses', icon: <BookOpen size={18} /> },
-        { label: 'Live Sessions', path: '/admin/live-sessions', icon: <Video size={18} /> },
-        { label: 'Learning Paths', path: '/admin/learning-paths', icon: <TrendingUp size={18} /> },
-        { label: 'System Health', path: '/admin/system-health', icon: <Activity size={18} /> },
+        // { label: 'Live Sessions', path: '/admin/live-sessions', icon: <Video size={18} /> },
+        // { label: 'Learning Paths', path: '/admin/learning-paths', icon: <TrendingUp size={18} /> },
+        // { label: 'System Health', path: '/admin/system-health', icon: <Activity size={18} /> },
         // ERP Modules
         { label: 'Admissions', path: '/erp/admissions', icon: <UserPlus size={18} /> },
         { label: 'Fee Management', path: '/erp/fees', icon: <DollarSign size={18} /> },
         { label: 'Hostel Management', path: '/erp/hostels', icon: <HostelIcon size={18} /> },
               { label: 'Examinations', path: '/erp/examinations/enhanced', icon: <ClipboardList size={18} /> },
-              { label: 'Import Students', path: '/erp/import/students', icon: <Users size={18} /> },
+              // { label: 'Import Students', path: '/erp/import/students', icon: <Users size={18} /> },
               { label: 'ERP Reports', path: '/erp/reports', icon: <BarChart3 size={18} /> },
         { label: 'Profile', path: '/profile', icon: <BadgeCheck size={18} /> },
       ]
@@ -157,17 +159,18 @@ export default function DashboardLayout({ role, children }) {
         { label: 'Learning Paths', path: '/learning-paths', icon: <Target size={18} /> },
         { label: 'Live Sessions', path: '/live-sessions', icon: <Video size={18} /> },
         { label: 'Reviews & Ratings', path: '/instructor/reviews', icon: <Star size={18} /> },
-        { label: 'Upload Materials', path: '/upload', icon: <Upload size={18} /> },
+        // { label: 'Upload Materials', path: '/upload', icon: <Upload size={18} /> },
         { label: 'Doubts', path: '/instructor/doubts', icon: <MessageCircle size={18} /> },
+        { label: 'Attendance', path: '/instructor/attendance', icon: <Users size={18} /> },
         // ERP Access for Instructors
-        { label: 'ERP Dashboard', path: '/instructor/erp', icon: <BarChart3 size={18} /> },
+        // { label: 'ERP Dashboard', path: '/instructor/erp', icon: <BarChart3 size={18} /> },
         // Calendar button will open modal, not navigate
         { label: 'Calendar', path: null, icon: <Calendar size={18} />, isCalendar: true },
         // Replace Analytics with Learning Sessions overview
-        { label: 'Learning Sessions', path: '/learning-paths', icon: <Target size={18} /> },
+        // { label: 'Learning Sessions', path: '/learning-paths', icon: <Target size={18} /> },
         { label: 'Profile', path: '/profile', icon: <BadgeCheck size={18} /> },
       ]
-    : ['admission_officer', 'fee_manager', 'hostel_manager', 'exam_controller', 'accountant', 'registrar'].includes(resolvedRole)
+    : ['admission_officer', 'fee_manager', 'hostel_manager', 'exam_controller', 'accountant', 'registrar', 'librarian'].includes(resolvedRole)
     ? [
         { label: 'ERP Dashboard', path: roleHomePath, icon: <LayoutDashboard size={18} /> },
         // Role-specific modules
@@ -183,6 +186,9 @@ export default function DashboardLayout({ role, children }) {
         ...(resolvedRole === 'exam_controller' || resolvedRole === 'registrar' ? [
           { label: 'Examinations', path: '/erp/examinations/enhanced', icon: <ClipboardList size={18} /> },
         ] : []),
+        ...(resolvedRole === 'librarian' ? [
+          { label: 'Library Management', path: '/librarian', icon: <BookOpen size={18} /> },
+        ] : []),
         { label: 'Reports', path: '/erp/reports', icon: <BarChart3 size={18} /> },
         { label: 'Profile', path: '/profile', icon: <BadgeCheck size={18} /> },
       ]
@@ -195,14 +201,15 @@ export default function DashboardLayout({ role, children }) {
         { label: 'Learning Paths', path: '/learning-paths', icon: <Target size={18} /> },
         { label: 'Live Sessions', path: '/student/live-sessions', icon: <Video size={18} /> },
         { label: 'Doubts', path: '/student/doubts', icon: <MessageCircle size={18} /> },
+        { label: 'Attendance', path: '/student/attendance', icon: <Users size={18} /> },
         { label: 'Assessments', path: '/assessments', icon: <Award size={18} /> },
-        { label: 'Downloads', path: '/student/downloads', icon: <Download size={18} /> },
+        // { label: 'Downloads', path: '/student/downloads', icon: <Download size={18} /> },
         // ERP Access for Students
         { label: 'My Academic Info', path: '/student/erp', icon: <FileText size={18} /> },
-        { label: 'My Results', path: '/student/results', icon: <Award size={18} /> },
+        // { label: 'My Results', path: '/student/results', icon: <Award size={18} /> },
         // Calendar button will open modal, not navigate
         { label: 'Calendar', path: null, icon: <Calendar size={18} />, isCalendar: true },
-        { label: 'Certificates', path: '/certificates', icon: <BadgeCheck size={18} /> },
+        // { label: 'Certificates', path: '/certificates', icon: <BadgeCheck size={18} /> },
         { label: 'Profile', path: '/profile', icon: <BadgeCheck size={18} /> },
       ];
 
@@ -310,6 +317,7 @@ export default function DashboardLayout({ role, children }) {
                  resolvedRole === 'hostel_manager' ? 'Hostel Management Dashboard' :
                  resolvedRole === 'exam_controller' ? 'Examination Dashboard' :
                  resolvedRole === 'registrar' ? 'Registrar Dashboard' :
+                 resolvedRole === 'librarian' ? 'Library Management Dashboard' :
                  'Student Dashboard'}
               </h1>
             </div>

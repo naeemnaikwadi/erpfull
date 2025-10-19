@@ -6,6 +6,8 @@ const User = require('../models/User');
 const Classroom = require('../models/Classroom');
 const { auth, instructorOnly } = require('../middleware/auth');
 const Assignment = require('../models/Assignment');
+let PDFDocument;
+try { PDFDocument = require('pdfkit'); } catch (_) {}
 
 // GET /api/instructor/stats/:instructorId
 router.get('/stats/:instructorId', async (req, res) => {
@@ -15,9 +17,9 @@ router.get('/stats/:instructorId', async (req, res) => {
     // Count courses
     const totalCourses = await Course.countDocuments({ instructor: instructorId });
 
-    // Count total students (assumes 'enrolledStudents' array)
+    // Count total students (assumes 'studentsEnrolled' array)
     const courses = await Course.find({ instructor: instructorId });
-    const totalStudents = courses.reduce((acc, course) => acc + (course.enrolledStudents?.length || 0), 0);
+    const totalStudents = courses.reduce((acc, course) => acc + (course.studentsEnrolled?.length || 0), 0);
 
     // Calculate average rating (assumes 'rating' on course)
     const ratedCourses = courses.filter(course => course.rating);
@@ -25,10 +27,41 @@ router.get('/stats/:instructorId', async (req, res) => {
       ? (ratedCourses.reduce((acc, c) => acc + c.rating, 0) / ratedCourses.length).toFixed(2)
       : 0;
 
+    // Active learners (unique students engaged in last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const activeLearnersSet = new Set();
+    courses.forEach(course => {
+      (course.studentsEnrolled || []).forEach(s => activeLearnersSet.add(String(s)));
+    });
+
+    // Monthly enrollments (last 12 months) using Enrollment model
+    const Enrollment = require('../models/Enrollment');
+    const courseIds = courses.map(c => c._id);
+    let monthlyEnrollments = [];
+    if (courseIds.length > 0) {
+      monthlyEnrollments = await Enrollment.aggregate([
+        { $match: { course: { $in: courseIds } } },
+        {
+          $group: {
+            _id: { year: { $year: '$enrolledAt' }, month: { $month: '$enrolledAt' } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ]);
+    }
+
     res.json({
       totalCourses,
       totalStudents,
-      averageRating
+      averageRating: Number(averageRating) || 0,
+      totalRatings: courses.reduce((acc, c) => acc + (c.ratings?.length || 0), 0),
+      activeLearners: activeLearnersSet.size,
+      monthlyEnrollments: monthlyEnrollments.map(m => ({
+        year: m._id.year,
+        month: m._id.month,
+        count: m.count
+      }))
     });
   } catch (err) {
     console.error('Instructor stats error:', err);
@@ -66,6 +99,47 @@ router.get('/classrooms', auth, instructorOnly, async (req, res) => {
 });
 
 module.exports = router;
+
+// Export instructor overview PDF
+router.get('/stats/:instructorId/export.pdf', async (req, res) => {
+  try {
+    if (!PDFDocument) {
+      return res.status(503).json({ message: 'PDF generation not available' });
+    }
+    const instructorId = req.params.instructorId;
+    const courses = await Course.find({ instructor: instructorId });
+    const totalCourses = courses.length;
+    const totalStudents = courses.reduce((acc, c) => acc + (c.studentsEnrolled?.length || 0), 0);
+    const ratedCourses = courses.filter(c => c.rating);
+    const averageRating = ratedCourses.length ? (ratedCourses.reduce((acc, c) => acc + c.rating, 0) / ratedCourses.length).toFixed(2) : 0;
+
+    const Enrollment = require('../models/Enrollment');
+    const courseIds = courses.map(c => c._id);
+    const monthly = courseIds.length > 0 ? await Enrollment.aggregate([
+      { $match: { course: { $in: courseIds } } },
+      { $group: { _id: { y: { $year: '$enrolledAt' }, m: { $month: '$enrolledAt' } }, count: { $sum: 1 } } },
+      { $sort: { '_id.y': 1, '_id.m': 1 } }
+    ]) : [];
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=instructor_overview.pdf');
+    const doc = new PDFDocument({ margin: 40 });
+    doc.pipe(res);
+    doc.fontSize(18).text('Instructor Overview', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12);
+    doc.text(`Total Courses: ${totalCourses}`);
+    doc.text(`Total Students: ${totalStudents}`);
+    doc.text(`Average Rating: ${averageRating}`);
+    doc.moveDown();
+    doc.text('Monthly Enrollments', { underline: true });
+    monthly.forEach(m => doc.text(`${m._id.y}-${String(m._id.m).padStart(2,'0')}: ${m.count}`));
+    doc.end();
+  } catch (err) {
+    console.error('Instructor export error:', err);
+    res.status(500).json({ error: 'Failed to export' });
+  }
+});
 
 // Alias grading endpoint for assignments under /api/instructor
 // Matches frontend: PUT /api/instructor/assignments/:id/submissions/:submissionId/grade

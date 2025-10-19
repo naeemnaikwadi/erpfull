@@ -31,7 +31,7 @@ const GroupsManagementPage = () => {
 
   const fetchAdmins = async () => {
     try {
-      const { data } = await API.get('/admin/users', { params: { role: 'admin', limit: 100 } });
+      const { data } = await API.get('/erp/groups/lookups/admins');
       setAdmins(data.users || []);
     } catch (e) {
       console.error(e);
@@ -40,7 +40,7 @@ const GroupsManagementPage = () => {
 
   const fetchClassrooms = async () => {
     try {
-      const { data } = await API.get('/admin/classrooms', { params: { limit: 100 } });
+      const { data } = await API.get('/erp/groups/lookups/classrooms', { params: { limit: 100 } });
       setClassrooms(data.classrooms || []);
     } catch (e) {
       console.error(e);
@@ -51,7 +51,7 @@ const GroupsManagementPage = () => {
     try {
       setStudentsQuery(q);
       if (!q || q.length < 2) { setStudents([]); return; }
-      const { data } = await API.get('/admin/users', { params: { role: 'student', search: q, limit: 10 } });
+      const { data } = await API.get('/erp/groups/lookups/students', { params: { q, limit: 10 } });
       setStudents(data.users || []);
     } catch (e) {
       console.error(e);
@@ -154,7 +154,7 @@ const GroupsManagementPage = () => {
                     <div className="text-sm text-gray-600 dark:text-gray-400">{g.description}</div>
                     <div className="text-xs text-gray-500 mt-1">{(g.students || []).length} students</div>
                     {g.assignedAdmin && (
-                      <div className="text-xs text-gray-500 mt-1">Assigned Admin: {admins.find(a => a._id === g.assignedAdmin)?.name || '—'}</div>
+                    <div className="text-xs text-gray-500 mt-1">Assigned Admin: {g.assignedAdminName || admins.find(a => a._id === g.assignedAdmin)?.name || '—'}</div>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 md:flex-row md:items-center">
