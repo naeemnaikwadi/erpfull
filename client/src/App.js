@@ -85,6 +85,8 @@ import EnhancedExaminationsPage from './pages/EnhancedExaminationsPage';
 import StudentResultsPage from './pages/StudentResultsPage';
 import StudentImportPage from './pages/StudentImportPage';
 import SetupPage from './pages/SetupPage';
+import 'https://cdn.lordicon.com/lordicon.js';
+
 
 
 function App() {

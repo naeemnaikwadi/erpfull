@@ -1,3 +1,4 @@
+/* ===== Tailwind Base ===== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,6 +7,50 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f9fafb;
 }
+
 html.dark {
-  background-color: #111827; /* Optional */
+  background-color: #111827; /* dark background */
+}
+
+/* ===== Beautiful Scrollbar (Light + Dark) ===== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #f1f5f9; /* Tailwind's slate-100 */
+  border-radius: 10px;
+}
+
+/* Thumb */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cbd5e1, #94a3b8); /* slate-300 to slate-400 */
+  border-radius: 10px;
+  border: 2px solid #f1f5f9; /* gives nice padding effect */
+}
+
+/* Hover state */
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #94a3b8, #64748b); /* slate-400 to slate-500 */
+}
+
+/* ===== Dark Mode Scrollbar ===== */
+html.dark ::-webkit-scrollbar-track {
+  background: #1e293b; /* slate-800 */
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #475569, #334155); /* slate-600 to slate-700 */
+  border: 2px solid #1e293b;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #64748b, #475569); /* lighter hover in dark mode */
+}
+
+/* Optional smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
