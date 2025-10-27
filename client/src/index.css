@@ -5,52 +5,123 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f9fafb;
+  background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%);
+  background-attachment: fixed;
+  transition: background 0.4s ease, color 0.3s ease;
 }
 
-html.dark {
-  background-color: #111827; /* dark background */
+/* Dark theme background applied directly to body */
+html.dark body {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e1b4b 100%);
+  background-attachment: fixed;
+  color: #f3f4f6; /* optional: light text for dark mode */
 }
 
 /* ===== Beautiful Scrollbar (Light + Dark) ===== */
 ::-webkit-scrollbar {
+  margin-left: 50px;
   width: 10px;
   height: 10px;
 }
 
 /* Track */
 ::-webkit-scrollbar-track {
-  background: #f1f5f9; /* Tailwind's slate-100 */
+  background: #f1f5f9;
   border-radius: 10px;
 }
 
 /* Thumb */
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #cbd5e1, #94a3b8); /* slate-300 to slate-400 */
+  background: linear-gradient(180deg, #cbd5e1, #94a3b8);
   border-radius: 10px;
-  border: 2px solid #f1f5f9; /* gives nice padding effect */
+  border: 2px solid #f1f5f9;
 }
 
 /* Hover state */
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #94a3b8, #64748b); /* slate-400 to slate-500 */
+  background: linear-gradient(180deg, #94a3b8, #64748b);
 }
 
 /* ===== Dark Mode Scrollbar ===== */
 html.dark ::-webkit-scrollbar-track {
-  background: #1e293b; /* slate-800 */
+  background: #1e293b;
 }
 
 html.dark ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #475569, #334155); /* slate-600 to slate-700 */
+  background: linear-gradient(180deg, #475569, #334155);
   border: 2px solid #1e293b;
 }
 
 html.dark ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #64748b, #475569); /* lighter hover in dark mode */
+  background: linear-gradient(180deg, #64748b, #475569);
 }
 
 /* Optional smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+/* ===== Other Animations (Kept Intact) ===== */
+
+/* Slow Pulse Animation */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+/* Simple Page Transition Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+
+
+
+
+/* Scroll Fade-In */
+.scroll-fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease-out;
+}
+
+.scroll-fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Smooth Spin Animation */
+@keyframes spin-smooth {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-smooth {
+  animation: spin-smooth 1s linear infinite;
+}
+
+/* Theme Transition */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

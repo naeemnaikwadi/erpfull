@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/authContext';
 import DashboardLayout from '../components/DashboardLayout';
+import SkeletonLoader from '../components/SkeletonLoader';
 import {
   UserPlus,
   Shield,
@@ -307,9 +308,9 @@ const RegistrarDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <DashboardLayout role="registrar">
+        <SkeletonLoader type="erp-dashboard" />
+      </DashboardLayout>
     );
   }
 

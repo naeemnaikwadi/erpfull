@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DashboardLayout from '../components/DashboardLayout';
+import SkeletonLoader from '../components/SkeletonLoader';
+import AnimatedCard from '../components/AnimatedCard';
+import ScrollAnimation from '../components/ScrollAnimation';
+import { AnimatedButton, AnimatedBadge, AnimatedIcon } from '../components/AnimationUtils';
 
 import StudentStatCard from '../components/StudentStatCard';
 import WhatToDoList from '../components/WhatToDoList';
@@ -329,18 +333,14 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <DashboardLayout role="student">
-        <div className="px-4 py-6 bg-[#f6f8fb] dark:bg-gray-900 min-h-screen">
-          <div className="flex justify-center items-center h-64">
-            <div className="text-lg">Loading dashboard...</div>
-          </div>
-        </div>
+        <SkeletonLoader type="student-dashboard" />
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout role="student">
-      <div className="px-4 py-6 bg-[#f6f8fb] dark:bg-gray-900 min-h-screen">
+      <div className="px-4 py-6  min-h-screen">
         
         {/* Welcome Section with Refresh Button */}
         <section className="mb-8">
@@ -391,137 +391,232 @@ export default function StudentDashboard() {
         </section>
 
         {/* Overview Stats */}
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">Overview</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-            <StudentStatCard 
-            title="Courses Enrolled" 
-            value={studentStats?.coursesEnrolled || 0}  
-            bgColor="bg-blue-100 dark:bg-blue-900"
-            textColor="text-blue-800 dark:text-blue-200"
-            />
-            <StudentStatCard title="Certificates Earned" 
-            value={studentStats?.certificatesEarned || 0}  
-            bgColor="bg-green-100 dark:bg-green-900"
-            textColor="text-green-800 dark:text-green-200"
-            />
-            <StudentStatCard title="Live Sessions Attended" 
-            value={studentStats?.liveSessionsAttended || 0}  
-            bgColor="bg-yellow-100 dark:bg-yellow-900"
-            textColor="text-yellow-800 dark:text-yellow-200"
-            />
-            <StudentStatCard title="Progress Level" 
-            value={studentStats?.progressLevel || 'Beginner'}  
-            bgColor="bg-purple-100 dark:bg-purple-900"
-            textColor="text-purple-800 dark:text-purple-200"
-            />
-            <StudentStatCard title="Learning Paths" 
-            value={learningPathStats?.totalPaths || 0}  
-            bgColor="bg-red-100 dark:bg-red-900"
-            textColor="text-red-800 dark:text-red-200"
-            />
-            <StudentStatCard title="Completed Paths" 
-            value={learningPathStats?.completedPaths || 0} 
-            bgColor="bg-violet-100 dark:bg-violet-900"
-            textColor="text-violet-800 dark:text-violet-200"
-            />
-          </div>
-        </section>
+        <section className="mb-10">
+  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 tracking-wide">
+    Overview
+  </h2>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+    <StudentStatCard
+      icon="📘"
+      title="Courses Enrolled"
+      value={studentStats?.coursesEnrolled || 0}
+      bgColor="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/60 dark:to-blue-800/40"
+      textColor="text-blue-800 dark:text-blue-200"
+    />
+    <StudentStatCard
+      icon="🎓"
+      title="Certificates Earned"
+      value={studentStats?.certificatesEarned || 0}
+      bgColor="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/60 dark:to-green-800/40"
+      textColor="text-green-800 dark:text-green-200"
+    />
+    <StudentStatCard
+      icon="🕓"
+      title="Live Sessions"
+      value={studentStats?.liveSessionsAttended || 0}
+      bgColor="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/60 dark:to-yellow-800/40"
+      textColor="text-yellow-800 dark:text-yellow-200"
+    />
+    <StudentStatCard
+      icon="⚡"
+      title="Progress Level"
+      value={studentStats?.progressLevel || 'Beginner'}
+      bgColor="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/60 dark:to-purple-800/40"
+      textColor="text-purple-800 dark:text-purple-200"
+    />
+    <StudentStatCard
+      icon="🧭"
+      title="Learning Paths"
+      value={learningPathStats?.totalPaths || 0}
+      bgColor="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/60 dark:to-rose-800/40"
+      textColor="text-rose-800 dark:text-rose-200"
+    />
+    <StudentStatCard
+      icon="✅"
+      title="Completed Paths"
+      value={learningPathStats?.completedPaths || 0}
+      bgColor="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/60 dark:to-indigo-800/40"
+      textColor="text-indigo-800 dark:text-indigo-200"
+    />
+  </div>
+</section>
+
+
+
+
+
+
 
         {/* Learning Paths Quick Access */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">Learning Paths</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 shadow-md rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
-                <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="space-y-3">
-                <button
-                  onClick={() => navigate('/learning-paths')}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Explore Learning Paths
-                </button>
-                <button
-                  onClick={() => navigate('/reading-statistics')}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  View Reading Statistics
-                </button>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 shadow-md rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Learning Progress</h3>
-                <Target className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Total Paths:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{learningPathStats?.totalPaths || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Completed:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{learningPathStats?.completedPaths || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Avg Progress:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{(learningPathStats?.averageProgress || 0).toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Time Spent:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{formatTime(learningPathStats?.totalTimeSpent || 0)}</span>
-                </div>
-              </div>
-            </div>
+  <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">
+    Learning Paths
+  </h2>
+
+  {/* Parent container */}
+  <div className="flex flex-col  md:flex-row gap-6 items-stretch">
+    
+    {/* Left Section - 70% */}
+    <div className="w-full md:w-[70%] bg-white dark:bg-gray-800 shadow-md rounded-2xl flex flex-col">
+    
+
+      <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-4 overflow-y-auto h-[320px]">
+        <WhatToDoList />
+      </div>
+    </div>
+
+    {/* Right Section - 30% */}
+    <div className="w-full md:w-[30%] bg-white dark:bg-gray-800 shadow-md rounded-2xl p-6 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Learning Progress
+          </h3>
+          <Target className="w-6 h-6 text-green-600 dark:text-green-400" />
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 dark:text-gray-300">Total Paths:</span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {learningPathStats?.totalPaths || 0}
+            </span>
           </div>
-        </section>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 dark:text-gray-300">Completed:</span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {learningPathStats?.completedPaths || 0}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 dark:text-gray-300">Avg Progress:</span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {(learningPathStats?.averageProgress || 0).toFixed(1)}%
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 dark:text-gray-300">Time Spent:</span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {formatTime(learningPathStats?.totalTimeSpent || 0)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          onClick={() => navigate('/learning-paths')}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
+        >
+          <BookOpen className="w-4 h-4" />
+          Explore Learning Paths
+        </button>
+        <button
+          onClick={() => navigate('/reading-statistics')}
+          className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
+        >
+          <TrendingUp className="w-4 h-4" />
+          View Reading Statistics
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
 
         {/* Assessments Quick Access */}
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">Assessments</h2>
-          <div className="bg-white dark:bg-gray-800 shadow-md rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Track Your Progress</h3>
-              <Award className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600 mb-1">
-                  {learningPathStats?.totalPaths || 0}
-                </div>
-                <div className="text-sm text-purple-600">Available Assessments</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-green-600 mb-1">
-                  {learningPathStats?.completedPaths || 0}
-                </div>
-                <div className="text-sm text-green-600">Completed</div>
-              </div>
-              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 mb-1">
-                  {(learningPathStats?.averageProgress || 0).toFixed(0)}%
-                </div>
-                <div className="text-sm text-blue-600">Average Score</div>
-              </div>
-            </div>
-            <div className="mt-4">
-              <button
-                onClick={() => navigate('/assessments')}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
-              >
-                <Award className="w-4 h-4" />
-                View Assessment Dashboard
-              </button>
-            </div>
-          </div>
-        </section>
+        <section className="mb-10">
+  <div className="flex flex-col md:flex-row gap-6">
+    {/* Left: Stats Card */}
+    <div className="w-full md:w-[35%] bg-white dark:bg-gray-800 shadow-md hover:shadow-xl transition-all rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Assessments</h2>
+        <Award className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+      </div>
 
-        {/* Progress Charts & What to Do */}
+      <div className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-800 rounded-xl p-5 mb-6 transition-all">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          Track Your Progress
+        </h3>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="text-center p-4 rounded-lg bg-gradient-to-r from-purple-100 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/10">
+            <div className="text-3xl font-bold text-purple-600 mb-1">
+              {learningPathStats?.totalPaths || 0}
+            </div>
+            <div className="text-sm text-purple-600 font-medium">Available</div>
+          </div>
+
+          <div className="text-center p-4 rounded-lg bg-gradient-to-r from-green-100 to-green-100 dark:from-green-900/20 dark:to-green-800/10">
+            <div className="text-3xl font-bold text-green-600 mb-1">
+              {learningPathStats?.completedPaths || 0}
+            </div>
+            <div className="text-sm text-green-600 font-medium">Completed</div>
+          </div>
+
+          <div className="text-center p-4 rounded-lg bg-gradient-to-r from-blue-100 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/10">
+            <div className="text-3xl font-bold text-blue-600 mb-1">
+              {(learningPathStats?.averageProgress || 0).toFixed(0)}%
+            </div>
+            <div className="text-sm text-blue-600 font-medium">Average Score</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Button */}
+      <button
+        onClick={() => navigate("/assessments")}
+        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all shadow-md hover:shadow-lg"
+      >
+        <Award className="w-4 h-4" />
+        View Assessment Dashboard
+      </button>
+    </div>
+
+    {/* Right: Chart Card */}
+    <div className="w-full md:w-[65%] bg-white dark:bg-gray-800 shadow-md hover:shadow-xl transition-all rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
+          Performance Overview  
+        </h3>
+        <Clock className="w-6 h-6 text-blue-500 dark:text-blue-400" />
+      </div>
+
+      <div className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-800 rounded-xl p-5 h-[300px] flex items-center justify-center">
+      <ImprovementGraph />
+      </div>
+    </div>
+  </div>
+</section>
+
+
+        {/* Progress Charts & What to Do
         <section className="mb-8">
           <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">Progress Charts & What To Do</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -535,12 +630,12 @@ export default function StudentDashboard() {
               <WhatToDoList />
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Quick Actions */}
         <section className="mb-8">
           <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-6 bor">
             <StudentActionButtons navigate={navigate} />
           </div>
         </section>

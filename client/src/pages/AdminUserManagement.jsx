@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/authContext';
 import DashboardLayout from '../components/DashboardLayout';
+import SkeletonLoader from '../components/SkeletonLoader';
 import {
   Users, UserPlus, Edit, Trash2, Eye, Search, Filter, 
   MoreVertical, Shield, BookOpen, User, CheckCircle, XCircle,
@@ -245,9 +246,7 @@ export default function AdminUserManagement() {
   if (loading) {
     return (
       <DashboardLayout role="admin">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
+        <SkeletonLoader type="dashboard" />
       </DashboardLayout>
     );
   }

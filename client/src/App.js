@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from './context/authContext';
+import AnimatedBackground from './components/AnimatedBackground';
+import PageTransition from './components/PageTransition';
 import AuthNavigator from './components/AuthNavigator';
 import LandingPage from './pages/LandingPage';
 import Register from './pages/Register';
@@ -96,13 +98,15 @@ function App() {
   // Show loading screen while checking persistent login
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">SkillSync</h2>
-          <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+      <AnimatedBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center animate-fade-in">
+            <div className="animate-spin-smooth rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">SkillSync</h2>
+            <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+          </div>
         </div>
-      </div>
+      </AnimatedBackground>
     );
   }
 
@@ -124,11 +128,27 @@ function App() {
     return patterns.some(rx => rx.test(path));
   })();
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   return (
-    <>
+    <AnimatedBackground>
       <AuthNavigator />
       {!hideChat && <ChatWidget />}
-      <Routes>
+      <PageTransition>
+        <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
@@ -780,8 +800,9 @@ function App() {
           path="/setup"
           element={<SetupPage />}
         />
-      </Routes>
-    </>
+        </Routes>
+      </PageTransition>
+    </AnimatedBackground>
   );
 }
 

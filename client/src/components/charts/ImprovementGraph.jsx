@@ -59,7 +59,7 @@ const ImprovementGraph = ({ data, autoRefresh = true, refreshInterval = 30000 })
         <div className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-green-600" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Academic Progress
+            Academic Progress only progress graph not other graphs
           </h3>
         </div>
         <div className="flex items-center gap-2">

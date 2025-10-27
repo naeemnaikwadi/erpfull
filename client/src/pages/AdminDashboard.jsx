@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import DashboardLayout from '../components/DashboardLayout';
 import StatCard from '../components/StatCard';
+import SkeletonLoader from '../components/SkeletonLoader';
+import AnimatedCard from '../components/AnimatedCard';
 import {
   Users,User, BookOpen, Users2, Shield, 
   TrendingUp, Calendar, Target, Video,
@@ -515,9 +517,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <DashboardLayout role="admin">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
+        <SkeletonLoader type="admin-dashboard" />
       </DashboardLayout>
     );
   }
@@ -578,82 +578,82 @@ export default function AdminDashboard() {
 
         {/* Stats Cards + Assigned Students for this Admin */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <AnimatedCard className="p-6 stagger-item" staggerDelay={0.1}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalUsers || 0}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
-                <Users className="w-6 h-6 text-blue-600" />
+                <Users className="w-6 h-6 text-blue-600 icon-bounce" />
               </div>
             </div>
             <div className="mt-4">
               <button
                 onClick={() => setActiveTab('users')}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium ripple-effect"
               >
               </button>
             </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          </AnimatedCard>
+          <AnimatedCard className="p-6 stagger-item" staggerDelay={0.2}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalStudents || 0}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
-                <Users2 className="w-6 h-6 text-green-600" />
+                <Users2 className="w-6 h-6 text-green-600 icon-bounce" />
               </div>
             </div>
             <div className="mt-4">
               <button
                 onClick={() => setActiveTab('users')}
-                className="text-green-600 hover:text-green-800 text-sm font-medium"
+                className="text-green-600 hover:text-green-800 text-sm font-medium ripple-effect"
               >
               </button>
             </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          </AnimatedCard>
+          <AnimatedCard className="p-6 stagger-item" staggerDelay={0.3}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Instructors</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalInstructors || 0}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
-                <BookOpen className="w-6 h-6 text-purple-600" />
+                <BookOpen className="w-6 h-6 text-purple-600 icon-bounce" />
               </div>
             </div>
             <div className="mt-4">
               <button
                 onClick={() => setActiveTab('users')}
-                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                className="text-purple-600 hover:text-purple-800 text-sm font-medium ripple-effect"
               >
               </button>
             </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          </AnimatedCard>
+          <AnimatedCard className="p-6 stagger-item" staggerDelay={0.4}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Classrooms</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalClassrooms || 0}</p>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
-                <Target className="w-6 h-6 text-orange-600" />
+                <Target className="w-6 h-6 text-orange-600 icon-bounce" />
               </div>
             </div>
             <div className="mt-4">
               <button
                 onClick={() => setActiveTab('classrooms')}
-                className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                className="text-orange-600 hover:text-orange-800 text-sm font-medium ripple-effect"
               >
               </button>
             </div>
-          </div>
+          </AnimatedCard>
         </div>
 
         {/* Assigned Students (via Groups) */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <AnimatedCard className="p-6 stagger-item" staggerDelay={0.5}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">My Assigned Groups</h3>
             <button
@@ -687,8 +687,8 @@ export default function AdminDashboard() {
             {availableStudents.length === 0 && (
               <div className="text-sm text-gray-500">No groups assigned to you yet.</div>
             )}
-          </div>
-        </div>
+            </div>
+          </AnimatedCard>
 
         {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -3,7 +3,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-export default function StatCard({ title, value, icon, color, trend, trendUp, subtitle }) {
+export default function StatCard({ title, label, value, icon, color, bgColor, textColor, trend, trendUp, subtitle }) {
   const getColorClasses = (color) => {
     switch (color) {
       case 'blue':
@@ -38,11 +38,20 @@ export default function StatCard({ title, value, icon, color, trend, trendUp, su
     }
   };
 
+  // Use custom bgColor and textColor if provided, otherwise use color-based classes
+  const cardClasses = bgColor && textColor 
+    ? `${bgColor} border-gray-200 dark:border-gray-700 ${textColor}`
+    : getColorClasses(color);
+  
+  const iconClasses = textColor 
+    ? textColor // Use the textColor directly for the icon
+    : getIconColor(color);
+
   return (
-    <div className={`rounded-xl border p-6 ${getColorClasses(color)} transition-all duration-300 hover:shadow-lg hover:scale-105`}>
+    <div className={`rounded-xl border p-6 ${cardClasses} transition-all duration-300 hover:shadow-lg hover:scale-105`}>
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium opacity-75 mb-2">{title}</p>
+          <p className="text-sm font-medium opacity-75 mb-2">{title || label}</p>
           <p className="text-3xl font-bold">{value}</p>
           {trend && (
             <div className="flex items-center mt-2">
@@ -60,7 +69,7 @@ export default function StatCard({ title, value, icon, color, trend, trendUp, su
             <p className="text-xs opacity-75 mt-2">{subtitle}</p>
           )}
         </div>
-        <div className={`p-3 rounded-full bg-white/50 ${getIconColor(color)}`}>
+        <div className={`p-3 rounded-full bg-white/50 dark:bg-gray-700/50 ${iconClasses}`}>
           {React.cloneElement(icon, { size: 24 })}
         </div>
       </div>

@@ -851,8 +851,8 @@ export default function DashboardLayout({ role, children }) {
             path: "/student/live-sessions",
             icon: (
               <lord-icon
-                src="https://cdn.lordicon.com/ryqmtznf.json"
-                trigger="hover"
+              src="https://cdn.lordicon.com/zczzhvwa.json"
+              trigger="hover"
                 style={{ 
                   width: "24px", 
                   height: "24px",
@@ -899,7 +899,7 @@ export default function DashboardLayout({ role, children }) {
             path: "/assessments",
             icon: (
               <lord-icon
-                src="https://cdn.lordicon.com/ryqmtznf.json"
+              src="https://cdn.lordicon.com/bpptgtfr.json"
                 trigger="hover"
                 style={{ 
                   width: "24px", 
@@ -917,7 +917,7 @@ export default function DashboardLayout({ role, children }) {
             path: "/student/erp",
             icon: (
               <lord-icon
-                src="https://cdn.lordicon.com/ryqmtznf.json"
+              src="https://cdn.lordicon.com/bpptgtfr.json"
                 trigger="hover"
                 style={{ 
                   width: "24px", 
@@ -976,7 +976,7 @@ export default function DashboardLayout({ role, children }) {
   };
 
   return (
-    <div className="min-h-screen h-screen overflow-hidden flex bg-gray-50 dark:bg-gray-900 dark:text-white transition-colors duration-300">
+    <div className="min-h-screen h-screen overflow-hidden flex dark:text-white transition-colors duration-300">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -987,7 +987,7 @@ export default function DashboardLayout({ role, children }) {
 
       {/* Sidebar - Fixed and Static */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-300 md:translate-x-0`}
       >
@@ -1034,7 +1034,7 @@ export default function DashboardLayout({ role, children }) {
                   className={`flex items-center gap-3 w-full text-left px-3 md:px-4 py-2 md:py-3 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm
                     ${
                       location.pathname === link.path && link.path
-                        ? "bg-primary/10 text-primary dark:bg-primary dark:text-white"
+                        ? "bg-primary/10 text-primary dark:bg-blue dark:text-white"
                         : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                     }`}
                 >

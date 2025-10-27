@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, MessageSquare, Users, Send, CheckCircle, XCircle, Phone, User, GraduationCap, Calendar, Filter, Search } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import SkeletonLoader from '../components/SkeletonLoader';
 import API from '../services/api';
 
 export default function AdminCommunicationPage() {
@@ -291,10 +292,8 @@ export default function AdminCommunicationPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+      <DashboardLayout role="admin">
+        <SkeletonLoader type="list" />
       </DashboardLayout>
     );
   }

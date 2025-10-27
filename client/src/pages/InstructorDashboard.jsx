@@ -5,6 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BookOpen, Users, Star, Target, Clock, RefreshCw, TrendingUp, FileText } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import SkeletonLoader from '../components/SkeletonLoader';
+import AnimatedCard from '../components/AnimatedCard';
+import ScrollAnimation from '../components/ScrollAnimation';
+import { AnimatedButton, AnimatedBadge, AnimatedIcon } from '../components/AnimationUtils';
 import StatCard from '../components/StatCard';
 import MonthlyChart from '../components/MonthlyChart';
 import InstructorActionButtons from '../components/InstructorActionButtons';
@@ -84,120 +88,164 @@ export default function InstructorDashboard() {
   if (loading) {
     return (
       <DashboardLayout role="instructor">
-        <div className="px-4 py-6 bg-[#f6f8fb] dark:bg-gray-900 min-h-screen">
-          <div className="flex justify-center items-center h-64">
-            <div className="text-lg">Loading dashboard...</div>
-          </div>
-        </div>
+        <SkeletonLoader type="instructor-dashboard" />
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout role="instructor">
-      <div className="px-4 py-6 bg-[#f6f8fb] dark:bg-gray-900 min-h-screen">
+      <div className="px-4 py-6  min-h-screen">
         
         {/* Welcome Section with Refresh Button */}
-        <section className="mb-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              {/* Profile Section */}
-              <div className="relative">
-                {localStorage.getItem('user') && JSON.parse(localStorage.getItem('user')).avatarUrl ? (
-                  <img
-                    src={JSON.parse(localStorage.getItem('user')).avatarUrl?.startsWith('http') ? JSON.parse(localStorage.getItem('user')).avatarUrl : `http://localhost:4000${JSON.parse(localStorage.getItem('user')).avatarUrl}`}
-                    alt={JSON.parse(localStorage.getItem('user')).name || 'Instructor'}
-                    className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
-                    onError={(e) => {
-                      e.target.src = '/logo192.png';
-                    }}
-                  />
-                ) : (
-                  <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold text-white border-4 border-white shadow-lg">
-                    {localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).name?.charAt(0).toUpperCase() || localStorage.getItem('userName')?.charAt(0).toUpperCase() || 'I' : 'I'}
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-                  Welcome, {localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).name || localStorage.getItem('userName') || 'Instructor' : 'Instructor'}!
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300 hidden sm:block text-xl">
-                  Here's an overview of your teaching activities and student progress.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              {lastUpdated && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                </span>
-              )}
-              <button
-                onClick={refreshAllData}
-                disabled={refreshing}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? '' : ''}
-              </button>
-              <a
-                href={`http://localhost:4000/api/instructor/stats/${instructorId}/export.pdf`}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-2 flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
-              >
-                Export PDF
-              </a>
-            </div>
+        <section className="mb-10">
+  <div className="flex flex-col sm:flex-row justify-between items-center gap-6 transition-all rounded-2xl p-6">
+    
+    {/* Profile & Greeting */}
+    <div className="flex items-center gap-5">
+      {/* Profile Avatar */}
+      <div className="relative">
+        {localStorage.getItem('user') && JSON.parse(localStorage.getItem('user')).avatarUrl ? (
+          <img
+            src={
+              JSON.parse(localStorage.getItem('user')).avatarUrl?.startsWith('http')
+                ? JSON.parse(localStorage.getItem('user')).avatarUrl
+                : `http://localhost:4000${JSON.parse(localStorage.getItem('user')).avatarUrl}`
+            }
+            alt={JSON.parse(localStorage.getItem('user')).name || 'Instructor'}
+            className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg ring-4 ring-purple-100 dark:ring-purple-900/40"
+            onError={(e) => {
+              e.target.src = '/logo192.png';
+            }}
+          />
+        ) : (
+          <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold text-white border-4 border-white shadow-lg ring-4 ring-purple-100 dark:ring-purple-900/40">
+            {localStorage.getItem('user')
+              ? JSON.parse(localStorage.getItem('user')).name?.charAt(0).toUpperCase() ||
+                localStorage.getItem('userName')?.charAt(0).toUpperCase() ||
+                'I'
+              : 'I'}
           </div>
-        </section>
+        )}
+      </div>
 
-        {/* Overview Stats */}
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">Overview</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            <StatCard
-              label="Total Courses"
-              value={stats?.totalCourses || 0}
-              icon={<BookOpen />}
-              bgColor="bg-blue-100 dark:bg-blue-900"
-              textColor="text-blue-800 dark:text-blue-200"
-            />
-            <StatCard
-              label="Total Students"
-              value={stats?.totalStudents || 0}
-              icon={<Users />}
-              bgColor="bg-green-100 dark:bg-green-900"
-              textColor="text-green-800 dark:text-green-200"
-            />
-            <StatCard
-              label="Average Rating"
-              value={stats?.averageRating?.toFixed(1) || 0}
-              icon={<Star />}
-              bgColor="bg-yellow-100 dark:bg-yellow-900"
-              textColor="text-yellow-800 dark:text-yellow-200"
-              subtitle={`${stats?.totalRatings || 0} ratings`}
-            />
-            <StatCard
-              label="Learning Paths"
-              value={learningPathStats.totalPaths}
-              icon={<Target />}
-              bgColor="bg-purple-100 dark:bg-purple-900"
-              textColor="text-purple-800 dark:text-purple-200"
-            />
-            <StatCard
-              label="Active Learners"
-              value={stats?.activeLearners || 0}
-              icon={<Clock />}
-              bgColor="bg-indigo-100 dark:bg-indigo-900"
-              textColor="text-indigo-800 dark:text-indigo-200"
-              subtitle="Last 30 days"
-            />
-          </div>
-        </section>
+      {/* Welcome Text */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">
+          Welcome,&nbsp;
+          <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            {localStorage.getItem('user')
+              ? JSON.parse(localStorage.getItem('user')).name ||
+                localStorage.getItem('userName') ||
+                'Instructor'
+              : 'Instructor'}
+          </span>
+          !
+        </h2>
+        <p className="text-gray-600 dark:text-gray-300 hidden sm:block text-base">
+          Here's an overview of your teaching activities and student progress.
+        </p>
+      </div>
+    </div>
+
+    {/* Actions (Refresh + Export) */}
+    <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-end">
+      {lastUpdated && (
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Last updated:&nbsp;
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            {lastUpdated.toLocaleTimeString()}
+          </span>
+        </span>
+      )}
+
+      {/* Refresh Button */}
+      <button
+        onClick={refreshAllData}
+        disabled={refreshing}
+        className={`flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 text-white px-4 py-2.5 rounded-lg font-medium transition-all shadow-md hover:shadow-lg ${
+          refreshing ? 'opacity-75' : ''
+        }`}
+      >
+        <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+        <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+      </button>
+
+      {/* Export PDF Button */}
+      <a
+        href={`http://localhost:4000/api/instructor/stats/${instructorId}/export.pdf`}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+        Export PDF
+      </a>
+    </div>
+  </div>
+</section>
+
+{/* Overview Stats */}
+<section className="mb-10">
+  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 tracking-wide">
+    Overview
+  </h2>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+    <StatCard
+      label="Total Courses"
+      value={stats?.totalCourses || 0}
+      icon={<BookOpen className="w-6 h-6" />}
+      bgColor="bg-blue-50 dark:bg-blue-900"
+      textColor="text-blue-800 dark:text-blue-200"
+    />
+    <StatCard
+      label="Total Students"
+      value={stats?.totalStudents || 0}
+      icon={<Users className="w-6 h-6" />}
+      bgColor="bg-green-50 dark:bg-green-900"
+      textColor="text-green-800 dark:text-green-200"
+    />
+    <StatCard
+      label="Average Rating"
+      value={stats?.averageRating?.toFixed(1) || 0}
+      icon={<Star className="w-6 h-6" />}
+      bgColor="bg-yellow-50 dark:bg-yellow-900"
+      textColor="text-yellow-800 dark:text-yellow-200"
+      subtitle={`${stats?.totalRatings || 0} ratings`}
+    />
+    <StatCard
+      label="Learning Paths"
+      value={learningPathStats.totalPaths}
+      icon={<Target className="w-6 h-6" />}
+      bgColor="bg-purple-50 dark:bg-purple-900"
+      textColor="text-purple-800 dark:text-purple-200"
+    />
+    <StatCard
+      label="Active Learners"
+      value={stats?.activeLearners || 0}
+      icon={<Clock className="w-6 h-6" />}
+      bgColor="bg-indigo-50 dark:bg-indigo-900"
+      textColor="text-indigo-800 dark:text-indigo-200"
+      subtitle="Last 30 days"
+    />
+  </div>
+</section>
+
+
 
         {/* Learning Paths Quick Access */}
         <section className="mb-8">

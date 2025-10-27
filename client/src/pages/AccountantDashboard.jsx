@@ -385,11 +385,16 @@ const AccountantDashboard = () => {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {loading ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    </td>
-                  </tr>
+                  [...Array(5)].map((_, index) => (
+                    <tr key={index} className="animate-pulse">
+                      <td className="px-6 py-4"><div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                    </tr>
+                  ))
                 ) : transactions.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">

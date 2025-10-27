@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createHostel, allocateRoom } from '../services/hostelService';
 import API from '../services/api';
 import DashboardLayout from '../components/DashboardLayout';
+import SkeletonLoader from '../components/SkeletonLoader';
 import {
   Building,
   Search,
@@ -375,9 +376,14 @@ const HostelManagementPage = () => {
               {/* Hostels Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
-                  <div className="col-span-full flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  </div>
+                  [...Array(6)].map((_, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                    </div>
+                  ))
                 ) : hostels.length === 0 ? (
                   <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
                     No hostels found

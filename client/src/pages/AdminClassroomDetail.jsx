@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import DashboardLayout from '../components/DashboardLayout';
+import SkeletonLoader from '../components/SkeletonLoader';
 import {
   BookOpen, Users, Target, Calendar, Clock, Edit, Trash2, Plus,
   Eye, UserPlus, UserMinus, GraduationCap, Video, TrendingUp,
@@ -222,9 +223,7 @@ const AdminClassroomDetail = () => {
   if (loading) {
     return (
       <DashboardLayout role="admin">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading classroom details...</div>
-        </div>
+        <SkeletonLoader type="detail" />
       </DashboardLayout>
     );
   }
