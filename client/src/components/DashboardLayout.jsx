@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { clearUser } from "../redux/userSlice";
 import { useAuth } from "../context/authContext";
+
 
 // Logo will be referenced from public directory
 import {
@@ -44,6 +45,7 @@ import {
 } from "lucide-react";
 import LiveSessionCalendar from "./LiveSessionCalendar";
 import NotificationPopup from "./NotificationPopup";
+import logo from "../assets/logo192.png";
 
 export default function DashboardLayout({ role, children }) {
   // const navigate = useNavigate();
@@ -997,11 +999,13 @@ export default function DashboardLayout({ role, children }) {
             {/* <div className="flex items-center justify-between mb-6"> */}
             <div className="w-25 h-14 ml-2 flex items-center justify-start border-b-2">
               <img
-                src="../assets/logo192.png"
+                src={logo}
                 alt="logo"
-                className="max-w-full max-h-full object-contain mix-blend-multiply "
+                className="max-w-full max-h-full object-contain"
+                onClick={() => navigate("/")}
               />
-              <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white  ml-2  pb-4">
+              <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white  ml-2  pb-4 hover:cursor-pointer"
+                  onClick={()=> navigate("/")} >
                 SkillSync
               </h2>
             </div>
@@ -1020,29 +1024,41 @@ export default function DashboardLayout({ role, children }) {
             {/* Sidebar Navigation */}
             <nav className="space-y-2 mt-4">
               {sidebarLinks.map((link) => (
-                <button
-                  key={link.label}
-                  onClick={() => {
-                    if (link.isCalendar) {
+                link.isCalendar ? (
+                  <button
+                    key={link.label}
+                    onClick={() => {
                       setShowCalendarModal(true);
                       setSidebarOpen(false);
-                    } else if (link.path) {
-                      navigate(link.path);
-                      setSidebarOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full text-left px-3 md:px-4 py-2 md:py-3 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm
+                      bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 dark:focus-visible:ring-blue-500/50"
+                  >
+                    {link.icon}
+                    <span className="block">{link.label}</span>
+                  </button>
+                ) : (
+                  <NavLink
+                    key={link.label}
+                    to={link.path}
+                    onClick={() => setSidebarOpen(false)}
+                    end={link.path === roleHomePath || /Dashboard/i.test(link.label)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 w-full text-left px-3 md:px-4 py-2 md:py-3 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm focus:outline-none focus-visible:ring-2
+                      ${
+                        isActive
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-600/40 dark:text-white focus-visible:ring-blue-400/70 dark:focus-visible:ring-blue-500/60"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 focus-visible:ring-blue-400/40 dark:focus-visible:ring-blue-500/40"
+                      }`
                     }
-                  }}
-                  className={`flex items-center gap-3 w-full text-left px-3 md:px-4 py-2 md:py-3 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm
-                    ${
-                      location.pathname === link.path && link.path
-                        ? "bg-primary/10 text-primary dark:bg-blue dark:text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
-                >
-                  {link.icon}
-                  <span className="block">{link.label}</span>
-                </button>
+                  >
+                    {link.icon}
+                    <span className="block">{link.label}</span>
+                  </NavLink>
+                )
               ))}
             </nav>
+
           </div>
 
           {/* Footer */}
