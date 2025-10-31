@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import logo from "../assets/logo.png";
 import { 
   BookOpen, 
   Users, 
@@ -106,7 +107,12 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <img src="/logo192.png" alt="SkillSync" className="h-10 w-auto" />
+              <img
+                src={logo}
+                alt="logo"
+                className="max-w-12 max-h-12 object-contain"
+                onClick={() => navigate("/")}
+              />
               <span className="text-xl font-bold text-gray-900 dark:text-white">SkillSync</span>
             </div>
                         <div className="flex items-center space-x-4">
