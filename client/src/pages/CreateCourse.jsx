@@ -42,7 +42,9 @@ const CreateCourse = () => {
   const [fileUploading, setFileUploading] = useState(false);
 
   useEffect(() => {
-    fetchClassroom();
+    if (classroomId) {
+      fetchClassroom();
+    }
   }, [classroomId]);
 
   const fetchClassroom = async () => {
@@ -170,6 +172,23 @@ const CreateCourse = () => {
       setLoading(false);
     }
   };
+
+  if (!classroomId) {
+    return (
+      <DashboardLayout role="instructor">
+        <div className="px-4 py-6 bg-[#f6f8fb] dark:bg-gray-900 min-h-screen">
+          <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Select a Classroom</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">This page was opened without a classroom context. Please go to your classrooms and choose "Create Course" from a specific classroom.</p>
+            <div className="flex gap-3">
+              <button onClick={() => navigate('/instructor/classrooms')} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Go to My Classrooms</button>
+              <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg">Go Back</button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (!classroom) {
     return (

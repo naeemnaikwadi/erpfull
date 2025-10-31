@@ -88,7 +88,7 @@ export default function ChatWidget() {
       {isOpen && (
         <div className="fixed bottom-6 right-6 z-50 w-[92vw] max-w-[380px] md:max-w-[420px] h-[70vh] max-h-[640px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800">
+          <div className="px-4 py-3 border-b border-green-800 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800">
             <div>
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">ERP Assistant</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">Ask about courses, schedules, ERP help</div>

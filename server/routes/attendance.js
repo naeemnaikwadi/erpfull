@@ -39,9 +39,10 @@ router.get('/instructor/courses', checkInstructorAccess, async (req, res) => {
     }).select('_id name');
 
     if (assignedClassrooms.length === 0) {
-      return res.status(404).json({ 
+      return res.status(200).json({ 
         message: 'No classrooms assigned to this instructor. Please contact admin to assign you to a classroom.',
-        courses: []
+        courses: [],
+        assignedClassrooms: []
       });
     }
 
@@ -55,7 +56,7 @@ router.get('/instructor/courses', checkInstructorAccess, async (req, res) => {
       .select('title code description classroom');
     
     if (courses.length === 0) {
-      return res.status(404).json({ 
+      return res.status(200).json({ 
         message: 'No courses created yet. Please create courses in your assigned classrooms.',
         courses: [],
         assignedClassrooms: assignedClassrooms.map(c => ({ id: c._id, name: c.name }))
@@ -66,6 +67,49 @@ router.get('/instructor/courses', checkInstructorAccess, async (req, res) => {
   } catch (error) {
     console.error('Error fetching instructor courses:', error);
     res.status(500).json({ message: 'Error fetching courses', error: error.message });
+  }
+});
+
+// Compatibility alias: Update attendance for a specific date using PUT /api/attendance/:attendanceId
+router.put('/:attendanceId', checkInstructorAccess, async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+    const { attendanceRecords } = req.body;
+
+    const attendance = await Attendance.findById(attendanceId);
+    if (!attendance) {
+      return res.status(404).json({ message: 'Attendance record not found' });
+    }
+
+    // Verify instructor has access to this course
+    if (attendance.instructor.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Access denied to this attendance record' });
+    }
+
+    // Check if attendance is locked
+    if (attendance.isLocked) {
+      return res.status(400).json({ message: 'Attendance record is locked and cannot be modified' });
+    }
+
+    // Update attendance records
+    attendance.attendanceRecords = attendanceRecords.map(record => ({
+      student: record.studentId,
+      status: record.status,
+      remarks: record.remarks || '',
+      markedAt: new Date()
+    }));
+
+    await attendance.save();
+
+    const updatedAttendance = await Attendance.findById(attendanceId)
+      .populate('course', 'title code')
+      .populate('instructor', 'name email')
+      .populate('attendanceRecords.student', 'name email prn');
+
+    res.json(updatedAttendance);
+  } catch (error) {
+    console.error('Error updating attendance (alias route):', error);
+    res.status(500).json({ message: 'Error updating attendance', error: error.message });
   }
 });
 
@@ -84,7 +128,7 @@ router.get('/course/:courseId/students', checkInstructorAccess, async (req, res)
       .populate('student', 'name email prn course branch semester')
       .select('student enrollmentDate');
 
-    const students = enrollments.map(enrollment => ({
+    let students = enrollments.map(enrollment => ({
       _id: enrollment.student._id,
       name: enrollment.student.name,
       email: enrollment.student.email,
@@ -93,6 +137,24 @@ router.get('/course/:courseId/students', checkInstructorAccess, async (req, res)
       branch: enrollment.student.branch,
       semester: enrollment.student.semester
     }));
+
+    // Fallback: if no enrollments, return classroom members as students
+    if (students.length === 0) {
+      const courseDoc = await Course.findById(courseId).select('classroom');
+      if (courseDoc?.classroom) {
+        const classroom = await Classroom.findById(courseDoc.classroom)
+          .populate('students', 'name email prn')
+          .select('students');
+        if (classroom?.students?.length) {
+          students = classroom.students.map(s => ({
+            _id: s._id,
+            name: s.name,
+            email: s.email,
+            prn: s.prn
+          }));
+        }
+      }
+    }
 
     res.json(students);
   } catch (error) {
@@ -311,7 +373,7 @@ router.get('/course/:courseId/stats', checkInstructorAccess, async (req, res) =>
 router.get('/student/:studentId', async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { courseId, startDate, endDate } = req.query;
+    const { courseId, startDate, endDate, semester } = req.query;
 
     // Verify student can only access their own data (unless admin)
     if (req.user.role !== 'admin' && req.user.id.toString() !== studentId) {
@@ -322,6 +384,9 @@ router.get('/student/:studentId', async (req, res) => {
     if (courseId) query.course = courseId;
     if (startDate && endDate) {
       query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+    if (semester) {
+      query.semester = semester;
     }
 
     const attendanceRecords = await Attendance.find(query)
@@ -340,6 +405,8 @@ router.get('/student/:studentId', async (req, res) => {
         instructor: record.instructor,
         date: record.date,
         classTime: record.classTime,
+        semester: record.semester,
+        academicYear: record.academicYear,
         status: studentRecord ? studentRecord.status : 'Absent',
         remarks: studentRecord ? studentRecord.remarks : '',
         markedAt: studentRecord ? studentRecord.markedAt : null

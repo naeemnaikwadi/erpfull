@@ -23,10 +23,39 @@ const StudentAttendance = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('');
 
   useEffect(() => {
     fetchAttendanceData();
   }, []);
+
+  useEffect(() => {
+    const fetchWithFilters = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+        const params = new URLSearchParams();
+        if (selectedCourse) params.append('courseId', selectedCourse);
+        if (selectedSemester) params.append('semester', selectedSemester);
+        if (dateFilter) {
+          params.append('startDate', dateFilter);
+          params.append('endDate', dateFilter);
+        }
+        const url = `http://localhost:4000/api/attendance/student/${user._id}${params.toString() ? `?${params.toString()}` : ''}`;
+        const recordsResponse = await axios.get(url, { headers });
+        setAttendanceRecords(recordsResponse.data || []);
+      } catch (e) {
+        // no-op
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?._id) {
+      fetchWithFilters();
+    }
+  }, [selectedCourse, selectedSemester, dateFilter]);
 
   const fetchAttendanceData = async () => {
     try {
@@ -79,16 +108,24 @@ const StudentAttendance = () => {
     return Math.round(((present + late) / total) * 100);
   };
 
+  // Compute unique courses/semesters for dropdowns
+  const uniqueCourses = Array.from(new Set(attendanceRecords.map(r => r.course?._id && r.course?.title ? JSON.stringify({id: r.course._id, title: r.course.title, code: r.course.code}) : null).filter(Boolean))).map(s => JSON.parse(s));
+  const uniqueSemesters = Array.from(new Set(attendanceRecords.map(r => r.semester).filter(Boolean)));
+
+  // Enhanced search & filter including dropdowns (client-side search by name/code remains):
   const filteredRecords = attendanceRecords.filter(record => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       record.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.course?.code?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDate = !dateFilter || 
-      new Date(record.date).toISOString().split('T')[0] === dateFilter;
-    
-    return matchesSearch && matchesDate;
+    return matchesSearch;
   });
+
+  // Calculate dynamic stats from filteredRecords
+  const present = filteredRecords.filter(r => r.status === 'Present').length;
+  const absent = filteredRecords.filter(r => r.status === 'Absent').length;
+  const late = filteredRecords.filter(r => r.status === 'Late').length;
+  const total = filteredRecords.length;
+  const attendancePercentage = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
   if (loading) {
     return (
@@ -121,6 +158,30 @@ const StudentAttendance = () => {
               <RefreshCw className="w-4 h-4" />
               <span>Refresh</span>
             </button>
+          </div>
+        </div>
+
+        {/* --- Student Statistics for filtered records --- */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-green-600">{present}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Present</p>
+          </div>
+          <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <AlertTriangle className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-yellow-600">{late}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Late</p>
+          </div>
+          <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <XCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-red-600">{absent}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Absent</p>
+          </div>
+          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <TrendingUp className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-blue-600">{attendancePercentage}%</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Attendance</p>
           </div>
         </div>
 
@@ -191,6 +252,30 @@ const StudentAttendance = () => {
               </div>
             </div>
             <div>
+              <select
+                value={selectedCourse || ''}
+                onChange={e => setSelectedCourse(e.target.value)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">All Courses</option>
+                {uniqueCourses.map(course => (
+                  <option key={course.id} value={course.id}>{course.title} ({course.code})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={selectedSemester || ''}
+                onChange={e => setSelectedSemester(e.target.value)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">All Semesters</option>
+                {uniqueSemesters.map(sem => (
+                  <option key={sem} value={sem}>{sem}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <input
                 type="date"
                 placeholder="Filter by date"
@@ -257,7 +342,7 @@ const StudentAttendance = () => {
                 No Attendance Records Found
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                {searchTerm || dateFilter 
+                {searchTerm || dateFilter || selectedCourse || selectedSemester
                   ? 'No records match your current filters. Try adjusting your search criteria.'
                   : 'You don\'t have any attendance records yet. Attendance will appear here once your instructors start marking it.'
                 }

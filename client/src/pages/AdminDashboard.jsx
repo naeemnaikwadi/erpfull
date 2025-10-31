@@ -14,6 +14,7 @@ import {
   RefreshCw, AlertCircle, CheckCircle, XCircle, FileText,
   Mail, MessageSquare
 } from 'lucide-react';
+import WhatToDoList from '../components/WhatToDoList';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -812,7 +813,8 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   </div>
-
+                  {/* ToDo List for Admin */}
+                  <WhatToDoList />
                   {/* Recent Classrooms */}
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
