@@ -11,15 +11,6 @@ import { AuthProvider } from './context/authContext';
 // These silence upgrade warnings and opt-in to new behavior safely.
 // Note: This must be set before Router usage (App mounts BrowserRouter inside).
 // eslint-disable-next-line no-undef
-if (typeof window !== 'undefined') {
-  // @ts-ignore
-  window.__reactRouterVersion = 7;
-  // @ts-ignore
-  window.__reactRouterFuture = {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true
-  };
-}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
