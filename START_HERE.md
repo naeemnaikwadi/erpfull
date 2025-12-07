@@ -10,11 +10,16 @@
 
 | Platform | Time | Cost | Difficulty |
 |----------|------|------|------------|
-| **Render.com** ⭐ | 5 min | FREE | Easy |
+| **Render.com** ⭐ | 5 min | FREE* | Easy |
 | **Docker** | 2 min | VPS cost | Medium |
-| **Vercel + Render** | 7 min | FREE | Easy |
+| **Vercel + Render** | 7 min | FREE* | Easy |
 
 **Recommended**: Render.com (easiest, free, no credit card required)
+
+**⚠️ Free Tier Note**: Render free tier spins down after 15 minutes of inactivity (30-60 sec wake-up time). Solutions:
+- ✅ Accept it (fine for demos/testing)
+- ✅ Use free keep-alive service (see `RENDER_FREE_TIER_INFO.md`)
+- ✅ Upgrade to paid ($7/month for always-on)
 
 ---
 
@@ -220,15 +225,40 @@ Open your frontend URL in browser. You should see the login page.
 
 ---
 
+## � Optioenal: Prevent Free Tier Spin Down (5 minutes)
+
+Render's free tier sleeps after 15 minutes of inactivity. To keep it awake 24/7 for FREE:
+
+### Option 1: UptimeRobot (Recommended)
+1. Go to https://uptimerobot.com/ (FREE, no credit card)
+2. Sign up
+3. Add Monitor:
+   - **Type**: HTTP(s)
+   - **URL**: `https://your-backend-url.onrender.com/health`
+   - **Interval**: 5 minutes
+4. Done! Your backend stays awake 24/7
+
+### Option 2: Cron-Job.org
+1. Go to https://cron-job.org/ (FREE)
+2. Create job to ping your `/health` endpoint every 10 minutes
+
+**Result**: No more 30-60 second delays, still $0 cost!
+
+See `RENDER_FREE_TIER_INFO.md` for detailed information about free tier limitations and solutions.
+
+---
+
 ## 📚 Documentation
 
 | Document | Purpose |
 |----------|---------|
 | **START_HERE.md** (this file) | Quick deployment guide |
+| `RENDER_FREE_TIER_INFO.md` | Free tier limitations & solutions |
 | `DEPLOYMENT_READY.md` | Complete verification report |
 | `QUICK_DEPLOY.md` | 5-minute deployment guide |
 | `DEPLOYMENT_GUIDE.md` | Comprehensive instructions |
 | `CHANGES_MADE.md` | What was changed for deployment |
+| `DOCKER_AND_LIVEKIT_EXPLAINED.md` | Docker & LiveKit explanation |
 | `README.md` | Project overview |
 
 ---
