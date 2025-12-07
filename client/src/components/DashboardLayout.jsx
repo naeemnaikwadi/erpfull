@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import LiveSessionCalendar from "./LiveSessionCalendar";
 import NotificationPopup from "./NotificationPopup";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo192.png";
 
 export default function DashboardLayout({ role, children }) {
   // const navigate = useNavigate();

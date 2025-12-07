@@ -7,8 +7,13 @@ const path = require('path');
 require('dotenv').config();
 const app = express();
 
-// Middleware
-app.use(cors());
+// Middleware - CORS Configuration
+const corsOptions = {
+  origin: process.env.CLIENT_URL || '*',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 
 // Request logger middleware for debugging
 app.use((req, res, next) => {
@@ -191,6 +196,25 @@ app.use((err, req, res, next) => {
     error: 'Server error',
     message: err.message || 'An unexpected error occurred',
     type: err.constructor.name
+  });
+});
+
+// Health check endpoint for deployment monitoring
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// API status endpoint
+app.get('/api/status', (req, res) => {
+  res.status(200).json({
+    status: 'running',
+    version: '1.0.0',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 

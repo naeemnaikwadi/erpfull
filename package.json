@@ -6,7 +6,10 @@
     "start-client": "npm --prefix client start",
     "start-server": "npm --prefix server run dev",
     "start-livekit": "server\\livekit-server.exe --config server\\livekit.yaml",
-    "start": "concurrently -k -n \"server,client,livekit\" -c \"green,blue,magenta\" \"npm run start-server\" \"powershell -Command Start-Sleep -Seconds 5; npm run start-client\" \"npm run start-livekit\""
+    "start": "concurrently -k -n \"server,client,livekit\" -c \"green,blue,magenta\" \"npm run start-server\" \"powershell -Command Start-Sleep -Seconds 5; npm run start-client\" \"npm run start-livekit\"",
+    "build": "npm --prefix client run build",
+    "install-all": "npm install && npm --prefix server install && npm --prefix client install",
+    "deploy-check": "npm run install-all && npm run build"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

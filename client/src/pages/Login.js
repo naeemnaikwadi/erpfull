@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Moon, Sun, X, CheckCircle } from 'lucide-react';
-import logo from "../assets/logo.png";
+import logo from "../assets/logo192.png";
 // Logo will be referenced from public directory
 
 export default function Login() {
