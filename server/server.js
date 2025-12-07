@@ -2,12 +2,14 @@ require('dotenv').config();
 
 const app = require('./app');
 const http = require('http');
-const { Server } = require('socket.io');
+// Socket.io removed for deployment compatibility
+// const { Server } = require('socket.io');
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+// const io = new Server(server, { cors: { origin: '*' } });
 
-// Socket.io event handlers
+// Socket.io event handlers - DISABLED FOR DEPLOYMENT
+/*
 io.on('connection', (socket) => {
   console.log('✅ A user connected:', socket.id);
 
@@ -37,6 +39,7 @@ io.on('connection', (socket) => {
     console.log('❌ A user disconnected:', socket.id);
   });
 });
+*/
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
