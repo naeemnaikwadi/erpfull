@@ -1,5 +1,8 @@
-import { io } from 'socket.io-client';
+let socket = null;
 
-const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:4000');
+if (process.env.NODE_ENV === "development") {
+  const { io } = require("socket.io-client");
+  socket = io("http://localhost:4000");
+}
 
 export default socket;
